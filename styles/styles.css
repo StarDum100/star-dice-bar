@@ -1,0 +1,20 @@
+.quick-dice-bar {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 6px;
+}
+
+.quick-dice-bar button {
+    color: white;
+    background: #2c2c2c;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
+.quick-dice-bar button:hover {
+    background: #444;
+}
