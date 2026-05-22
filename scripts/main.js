@@ -2,7 +2,7 @@ Hooks.once("init", () => {
     console.log("Dice Roll | Initialized");
 });
 
-Hooks.on("renderSceneControls", (app, html, data) => {
+Hooks.once("ready", () => {
     const diceBar = $(`
     <div class="quick-dice-bar">
       <button data-roll="1d4">d4</button>
@@ -15,7 +15,7 @@ Hooks.on("renderSceneControls", (app, html, data) => {
     </div>
   `);
 
-    html.closest("#ui-top").append(diceBar);
+    $("#ui-top").append(diceBar);
 
     diceBar.find("button").click(async (event) => {
         const formula = event.currentTarget.dataset.roll;
