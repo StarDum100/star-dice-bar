@@ -94,4 +94,37 @@ describe("Dice Roller", () => {
       });
     });
   });
+
+  describe("resilience", () => {
+    // These tests verify behavior when the Foundry environment differs from
+    // expectations — useful for catching breakage after a VTT version update.
+
+    it("does not throw when #ui-top is absent from the DOM", () => {
+      document.body.innerHTML = "";
+      expect(() => hookCallbacks["ready"]()).not.toThrow();
+    });
+
+    it("does not render the dice bar when #ui-top is absent", () => {
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      expect(document.querySelector(".quick-dice-bar")).toBeNull();
+    });
+
+    it("each click creates an independent Roll instance with no shared state", async () => {
+      document.body.innerHTML = '<div id="ui-top"></div>';
+      hookCallbacks["ready"]();
+
+      global.Roll.mockClear();
+      global.Roll.mockImplementation(() => ({
+        evaluate: jest.fn().mockResolvedValue(undefined),
+        toMessage: jest.fn(),
+      }));
+
+      document.querySelector('[data-roll="1d6"]').click();
+      document.querySelector('[data-roll="1d6"]').click();
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(global.Roll).toHaveBeenCalledTimes(2);
+    });
+  });
 });
