@@ -252,6 +252,18 @@ describe("Star Quick Dice", () => {
         expect(() => setupBar({ customDice: ["!@#$%^&*()"] })).not.toThrow();
       });
 
+      it("renders without crashing when saved formula has a negative multiplier", () => {
+        expect(() => setupBar({ customDice: ["-1d6"] })).not.toThrow();
+      });
+
+      it("renders without crashing when saved formula has a negative die size", () => {
+        expect(() => setupBar({ customDice: ["1d-6"] })).not.toThrow();
+      });
+
+      it("renders without crashing when saved formula contains arithmetic", () => {
+        expect(() => setupBar({ customDice: ["2d6-1"] })).not.toThrow();
+      });
+
       it("does not execute a script tag injected as a saved formula", () => {
         window.__xssLabel = undefined;
         setupBar({ customDice: ['<script>window.__xssLabel = true</script>'] });
@@ -379,6 +391,27 @@ describe("Star Quick Dice", () => {
 
     it("warns when the formula contains a script injection attempt", () => {
       attemptAdd("<script>alert(1)</script>");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula has a negative multiplier", () => {
+      attemptAdd("-1d6");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula has a negative die size", () => {
+      attemptAdd("1d-6");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula contains arithmetic", () => {
+      attemptAdd("2d6-1");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
         "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
       );
