@@ -212,7 +212,7 @@ async function openConfig(diceBar) {
                     <input type="checkbox" class="sqd-hide-bar-checkbox"${barHidden ? " checked" : ""}>
                     <div>
                         <strong>Hide Button Bar</strong>
-                        <p>Hide the button bar from the screen. Changes take effect when you click Save.</p>
+                        <p>Hide the button bar from the screen.</p>
                         <p>To restore it, uncheck this option in Configure Game Settings.</p>
                     </div>
                 </label>
@@ -239,7 +239,7 @@ async function openConfig(diceBar) {
     `;
 
     await foundry.applications.api.DialogV2.wait({
-        window:      { title: "Star Quick Dice — Configure" },
+        window:      { title: "Star Quick Dice — Configure (save to persist changes)" },
         content,
         rejectClose: false,
         buttons: [
