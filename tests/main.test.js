@@ -12,6 +12,12 @@ global.Roll = jest.fn();
 global.ChatMessage = {
   getSpeaker: jest.fn().mockReturnValue({ alias: "Tester" }),
 };
+global.game = {
+  user: {
+    getFlag: jest.fn().mockReturnValue(undefined),
+    setFlag: jest.fn().mockResolvedValue(undefined),
+  },
+};
 
 require("../scripts/main.js");
 
@@ -27,6 +33,7 @@ describe("Star Quick Dice", () => {
 
   describe("ready hook", () => {
     beforeEach(() => {
+      global.game.user.getFlag.mockReturnValue(undefined);
       document.body.innerHTML = '<div id="ui-top"></div>';
       hookCallbacks["ready"]();
     });
@@ -36,8 +43,12 @@ describe("Star Quick Dice", () => {
     });
 
     it("renders 7 dice buttons", () => {
-      const buttons = document.querySelectorAll(".quick-dice-bar button");
+      const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
       expect(buttons).toHaveLength(7);
+    });
+
+    it("renders a config button", () => {
+      expect(document.querySelector(".sqd-config-btn")).not.toBeNull();
     });
 
     it.each([
@@ -52,6 +63,53 @@ describe("Star Quick Dice", () => {
       const btn = document.querySelector(`[data-roll="${formula}"]`);
       expect(btn).not.toBeNull();
       expect(btn.textContent.trim()).toBe(label);
+    });
+
+    describe("custom dice", () => {
+      it("renders custom dice from saved flags", () => {
+        global.game.user.getFlag.mockImplementation((ns, key) => {
+          if (key === "customDice") return [{ label: "d105", formula: "1d105" }];
+          return undefined;
+        });
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        hookCallbacks["ready"]();
+        expect(document.querySelector('[data-roll="1d105"]')).not.toBeNull();
+      });
+
+      it("renders 8 dice buttons when one custom die is saved", () => {
+        global.game.user.getFlag.mockImplementation((ns, key) => {
+          if (key === "customDice") return [{ label: "2d6", formula: "2d6" }];
+          return undefined;
+        });
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        hookCallbacks["ready"]();
+        const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
+        expect(buttons).toHaveLength(8);
+      });
+    });
+
+    describe("visibility", () => {
+      it("hides dice buttons that are saved as not visible", () => {
+        global.game.user.getFlag.mockImplementation((ns, key) => {
+          if (key === "diceVisibility") return { "1d4": false };
+          return undefined;
+        });
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        hookCallbacks["ready"]();
+        const d4 = document.querySelector('[data-roll="1d4"]');
+        expect(d4.style.display).toBe("none");
+      });
+
+      it("shows dice buttons that are saved as visible", () => {
+        global.game.user.getFlag.mockImplementation((ns, key) => {
+          if (key === "diceVisibility") return { "1d20": true };
+          return undefined;
+        });
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        hookCallbacks["ready"]();
+        const d20 = document.querySelector('[data-roll="1d20"]');
+        expect(d20.style.display).not.toBe("none");
+      });
     });
 
     describe("on button click", () => {
@@ -95,9 +153,31 @@ describe("Star Quick Dice", () => {
     });
   });
 
+  describe("formulaToLabel", () => {
+    const cases = [
+      ["1d4",   "d4"  ],
+      ["1d105", "d105"],
+      ["2d6",   "2d6" ],
+      ["3d8",   "3d8" ],
+    ];
+
+    it.each(cases)("formulaToLabel(%s) === %s", (formula, expected) => {
+      global.game.user.getFlag.mockImplementation((ns, key) => {
+        if (key === "customDice") return [{ label: expected, formula }];
+        return undefined;
+      });
+      document.body.innerHTML = '<div id="ui-top"></div>';
+      hookCallbacks["ready"]();
+      const btn = document.querySelector(`[data-roll="${formula}"]`);
+      expect(btn).not.toBeNull();
+      expect(btn.textContent.trim()).toBe(expected);
+    });
+  });
+
   describe("resilience", () => {
-    // These tests verify behavior when the Foundry environment differs from
-    // expectations — useful for catching breakage after a VTT version update.
+    beforeEach(() => {
+      global.game.user.getFlag.mockReturnValue(undefined);
+    });
 
     it("does not throw when #ui-top is absent from the DOM", () => {
       document.body.innerHTML = "";
