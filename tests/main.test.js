@@ -346,6 +346,61 @@ describe("Star Quick Dice", () => {
     });
   });
 
+  describe("bar positioning", () => {
+    beforeEach(() => {
+      global.game.user.getFlag.mockReturnValue(undefined);
+    });
+
+    it("applies saved position from barPosition flag", () => {
+      global.game.user.getFlag.mockImplementation((ns, key) => {
+        if (key === "barPosition") return { left: 200, top: 150 };
+        return undefined;
+      });
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      const bar = document.querySelector(".quick-dice-bar");
+      expect(bar.style.left).toBe("200px");
+      expect(bar.style.top).toBe("150px");
+    });
+
+    it("applies default position when no barPosition flag is set", () => {
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      const bar = document.querySelector(".quick-dice-bar");
+      expect(bar.style.top).toBe("10px");
+      expect(bar.style.left).toMatch(/^\d+px$/);
+    });
+
+    it("appends the bar to body", () => {
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      expect(document.body.querySelector(".quick-dice-bar")).not.toBeNull();
+    });
+
+    it("renders a drag handle", () => {
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      expect(document.querySelector(".sqd-bar-handle")).not.toBeNull();
+    });
+
+    it("saves position to flag on drag end", () => {
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      global.game.user.setFlag.mockClear();
+
+      const handle = document.querySelector(".sqd-bar-handle");
+      $(handle).trigger({ type: "mousedown", clientX: 50, clientY: 50, preventDefault: () => {} });
+      $(document).trigger({ type: "mousemove.sqd-drag", clientX: 80, clientY: 70 });
+      $(document).trigger("mouseup.sqd-drag");
+
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice",
+        "barPosition",
+        expect.objectContaining({ left: expect.any(Number), top: expect.any(Number) })
+      );
+    });
+  });
+
   describe("resilience", () => {
     beforeEach(() => {
       global.game.user.getFlag.mockReturnValue(undefined);
@@ -354,12 +409,6 @@ describe("Star Quick Dice", () => {
     it("does not throw when #ui-top is absent from the DOM", () => {
       document.body.innerHTML = "";
       expect(() => hookCallbacks["ready"]()).not.toThrow();
-    });
-
-    it("does not render the dice bar when #ui-top is absent", () => {
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
-      expect(document.querySelector(".quick-dice-bar")).toBeNull();
     });
 
     it("each click creates an independent Roll instance with no shared state", async () => {

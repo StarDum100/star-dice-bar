@@ -8,6 +8,7 @@ const BUILT_IN_DICE = [
     { label: "d100", formula: "1d100" },
 ];
 
+
 function formulaToLabel(formula) {
     return formula.replace(/^1d/, "d");
 }
@@ -37,6 +38,43 @@ function getVisibility() {
         visibility[die.formula] = saved[die.formula] !== false;
     }
     return visibility;
+}
+
+function applyBarPosition(diceBar) {
+    const saved = game.user.getFlag("star-quick-dice", "barPosition");
+    const pos = saved ?? {
+        left: Math.round((window.innerWidth - diceBar.outerWidth()) / 2),
+        top: 10,
+    };
+    const left = Math.max(0, Math.min(window.innerWidth  - diceBar.outerWidth(),  pos.left));
+    const top  = Math.max(0, Math.min(window.innerHeight - diceBar.outerHeight(), pos.top));
+    diceBar.css({ left, top });
+}
+
+function initBarDrag(diceBar) {
+    let startX, startY, startLeft, startTop;
+
+    diceBar.find(".sqd-bar-handle").on("mousedown", (e) => {
+        e.preventDefault();
+        startX    = e.clientX;
+        startY    = e.clientY;
+        startLeft = parseInt(diceBar.css("left")) || 0;
+        startTop  = parseInt(diceBar.css("top"))  || 0;
+
+        $(document).on("mousemove.sqd-drag", (e) => {
+            const left = Math.max(0, Math.min(window.innerWidth  - diceBar.outerWidth(),  startLeft + e.clientX - startX));
+            const top  = Math.max(0, Math.min(window.innerHeight - diceBar.outerHeight(), startTop  + e.clientY - startY));
+            diceBar.css({ left, top });
+        });
+
+        $(document).on("mouseup.sqd-drag", () => {
+            $(document).off("mousemove.sqd-drag mouseup.sqd-drag");
+            game.user.setFlag("star-quick-dice", "barPosition", {
+                left: parseInt(diceBar.css("left")),
+                top:  parseInt(diceBar.css("top")),
+            });
+        });
+    });
 }
 
 function renderBar(diceBar) {
@@ -207,11 +245,14 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
     const diceBar = $(`<div class="quick-dice-bar">
+        <span class="sqd-bar-handle" title="Drag to move bar">&#8801;</span>
         <button class="sqd-config-btn" title="Configure Dice">&#9881;</button>
     </div>`);
 
-    $("#ui-top").append(diceBar);
+    $("body").append(diceBar);
+    applyBarPosition(diceBar);
     renderBar(diceBar);
+    initBarDrag(diceBar);
 
     diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar));
 });

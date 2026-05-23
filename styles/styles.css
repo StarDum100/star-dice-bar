@@ -1,10 +1,30 @@
 .quick-dice-bar {
+    position: fixed;
+    z-index: 70;
     display: flex;
     gap: 4px;
     padding: 4px;
     background: rgba(0,0,0,0.5);
     border-radius: 6px;
     pointer-events: all;
+    align-items: center;
+}
+
+.sqd-bar-handle {
+    color: #777;
+    cursor: grab;
+    font-size: 18px;
+    padding: 0 2px;
+    user-select: none;
+    line-height: 1;
+}
+
+.sqd-bar-handle:hover {
+    color: #aaa;
+}
+
+.sqd-bar-handle:active {
+    cursor: grabbing;
 }
 
 .quick-dice-bar button {
