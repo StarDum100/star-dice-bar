@@ -154,23 +154,62 @@ describe("Star Quick Dice", () => {
   });
 
   describe("formulaToLabel", () => {
-    const cases = [
+    function renderWithLabel(formula, label) {
+      global.game.user.getFlag.mockImplementation((ns, key) => {
+        if (key === "customDice") return [{ label, formula }];
+        return undefined;
+      });
+      document.body.innerHTML = '<div id="ui-top"></div>';
+      hookCallbacks["ready"]();
+    }
+
+    const validCases = [
       ["1d4",   "d4"  ],
       ["1d105", "d105"],
       ["2d6",   "2d6" ],
       ["3d8",   "3d8" ],
     ];
 
-    it.each(cases)("formulaToLabel(%s) === %s", (formula, expected) => {
-      global.game.user.getFlag.mockImplementation((ns, key) => {
-        if (key === "customDice") return [{ label: expected, formula }];
-        return undefined;
-      });
-      document.body.innerHTML = '<div id="ui-top"></div>';
-      hookCallbacks["ready"]();
+    it.each(validCases)("formulaToLabel(%s) === %s", (formula, expected) => {
+      renderWithLabel(formula, expected);
       const btn = document.querySelector(`[data-roll="${formula}"]`);
       expect(btn).not.toBeNull();
       expect(btn.textContent.trim()).toBe(expected);
+    });
+
+    describe("invalid label values", () => {
+      it("renders without crashing when label has no digits", () => {
+        expect(() => renderWithLabel("1d999", "abc")).not.toThrow();
+        expect(document.querySelector('[data-roll="1d999"]')).not.toBeNull();
+      });
+
+      it("renders without crashing when label is empty", () => {
+        expect(() => renderWithLabel("1d999", "")).not.toThrow();
+        expect(document.querySelector('[data-roll="1d999"]')).not.toBeNull();
+      });
+
+      it("renders without crashing when label contains special characters", () => {
+        expect(() => renderWithLabel("1d999", "!@#$%^&*()")).not.toThrow();
+        expect(document.querySelector('[data-roll="1d999"]')).not.toBeNull();
+      });
+
+      it("does not execute a script tag injected as a label", () => {
+        window.__xssLabel = undefined;
+        renderWithLabel("1d999", '<script>window.__xssLabel = true</script>');
+        expect(window.__xssLabel).toBeUndefined();
+      });
+
+      it("does not execute an event handler injected into the formula attribute", () => {
+        window.__xssFormula = undefined;
+        renderWithLabel('1d6" onmouseover="window.__xssFormula=true', "d6");
+        expect(window.__xssFormula).toBeUndefined();
+      });
+
+      it("does not execute an img onerror payload injected as a label", () => {
+        window.__xssImg = undefined;
+        renderWithLabel("1d999", '<img src=x onerror="window.__xssImg=true">');
+        expect(window.__xssImg).toBeUndefined();
+      });
     });
   });
 

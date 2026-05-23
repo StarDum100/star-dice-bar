@@ -32,7 +32,7 @@ function renderBar(diceBar) {
     diceBar.find("button[data-roll]").remove();
 
     const buttons = allDice.map(({ label, formula }) => {
-        const btn = $(`<button data-roll="${formula}">${label}</button>`);
+        const btn = $("<button>").attr("data-roll", formula).text(label);
         if (!visibility[formula]) btn.hide();
         btn.click(async () => {
             const roll = new Roll(formula);
