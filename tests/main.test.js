@@ -16,6 +16,7 @@ global.game = {
   user: {
     getFlag: jest.fn().mockReturnValue(undefined),
     setFlag: jest.fn().mockResolvedValue(undefined),
+    unsetFlag: jest.fn().mockResolvedValue(undefined),
   },
 };
 global.ui = {
@@ -445,24 +446,24 @@ describe("Star Quick Dice", () => {
       );
     });
 
-    it("reset position button closes the dialog", async () => {
+    it("reset position button does not close the dialog", async () => {
       html.find(".sqd-reset-position-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
-      expect(global.Dialog.__lastInstance.close).toHaveBeenCalled();
+      expect(global.Dialog.__lastInstance.close).not.toHaveBeenCalled();
     });
 
-    it("reset dice button clears customDice, diceOrder, and diceVisibility flags", async () => {
+    it("reset dice button unsets customDice, diceOrder, and diceVisibility flags", async () => {
       html.find(".sqd-reset-dice-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
-      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "customDice", []);
-      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "diceOrder", []);
-      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "diceVisibility", {});
+      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "customDice");
+      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "diceOrder");
+      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "diceVisibility");
     });
 
-    it("reset dice button closes the dialog", async () => {
+    it("reset dice button does not close the dialog", async () => {
       html.find(".sqd-reset-dice-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
-      expect(global.Dialog.__lastInstance.close).toHaveBeenCalled();
+      expect(global.Dialog.__lastInstance.close).not.toHaveBeenCalled();
     });
 
     it("reset dice button re-renders the bar with only built-in dice", async () => {

@@ -194,15 +194,13 @@ function openConfig(diceBar) {
             html.on("click", ".sqd-reset-position-btn", async () => {
                 await game.user.setFlag("star-quick-dice", "barPosition", null);
                 applyBarPosition(diceBar);
-                dialogInstance.close();
             });
 
             html.on("click", ".sqd-reset-dice-btn", async () => {
-                await game.user.setFlag("star-quick-dice", "customDice", []);
-                await game.user.setFlag("star-quick-dice", "diceOrder", []);
-                await game.user.setFlag("star-quick-dice", "diceVisibility", {});
+                await game.user.unsetFlag("star-quick-dice", "customDice");
+                await game.user.unsetFlag("star-quick-dice", "diceOrder");
+                await game.user.unsetFlag("star-quick-dice", "diceVisibility");
                 renderBar(diceBar);
-                dialogInstance.close();
             });
 
             const tbody = html.find("tbody")[0];
