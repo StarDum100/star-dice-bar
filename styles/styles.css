@@ -19,3 +19,28 @@
 .quick-dice-bar button:hover {
     background: #444;
 }
+
+.sqd-config-btn {
+    opacity: 0.6;
+    font-size: 14px;
+}
+
+.sqd-config-btn:hover {
+    opacity: 1;
+}
+
+.sqd-config-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+}
+
+.sqd-config-table th,
+.sqd-config-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #444;
+}
+
+.sqd-checkbox-cell {
+    text-align: center;
+}
