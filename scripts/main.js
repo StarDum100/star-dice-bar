@@ -398,12 +398,19 @@ async function openConfig(diceBar) {
                 if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
             });
 
+            // ── Extra tab ─────────────────────────────────────────────────
+            $html.on("change", ".sqd-hide-bar-checkbox", (e) => {
+                if (e.target.checked) diceBar.hide();
+                else                  diceBar.show();
+            });
         }
     });
 
     if (!saved) {
         if (pendingResetPosition) diceBar.css(originalPosition);
         if (pendingResetDice)     renderBar(diceBar);
+        if (barHidden) diceBar.hide();
+        else           diceBar.show();
     }
 }
 

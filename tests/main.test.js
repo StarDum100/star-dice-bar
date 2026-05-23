@@ -682,9 +682,24 @@ describe("Star Quick Dice", () => {
       expect(global.game.settings.set).not.toHaveBeenCalled();
     });
 
-    it("checking the checkbox does not immediately hide the bar", () => {
+    it("checking the checkbox hides the bar immediately for preview", () => {
       const html = openExtra();
       html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
+      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+    });
+
+    it("unchecking the checkbox shows the bar immediately for preview", () => {
+      const html = openExtra({ barHidden: true });
+      html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
+      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+    });
+
+    it("Cancel restores the bar to visible when checkbox was checked but not saved", async () => {
+      const html = openExtra();
+      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
+      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+      global.foundry.applications.api.DialogV2.__resolveDialog(null);
+      await new Promise(r => setTimeout(r, 0));
       expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
     });
 
