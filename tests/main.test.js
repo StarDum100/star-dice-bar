@@ -16,6 +16,11 @@ global.game = {
     setFlag:   jest.fn().mockResolvedValue(undefined),
     unsetFlag: jest.fn().mockResolvedValue(undefined),
   },
+  settings: {
+    register: jest.fn(),
+    get:      jest.fn().mockReturnValue(false),
+    set:      jest.fn().mockResolvedValue(undefined),
+  },
 };
 global.ui = {
   notifications: { warn: jest.fn() },
@@ -55,7 +60,9 @@ function openDialogHtml() {
 }
 
 function setupBar(flagOverrides = {}) {
-  global.game.user.getFlag.mockImplementation((ns, key) => flagOverrides[key] ?? undefined);
+  const { barHidden, ...flagsOnly } = flagOverrides;
+  global.game.user.getFlag.mockImplementation((ns, key) => flagsOnly[key] ?? undefined);
+  global.game.settings.get.mockImplementation((ns, key) => key === "barHidden" ? (barHidden ?? false) : false);
   document.body.innerHTML = "";
   hookCallbacks["ready"]();
 }
@@ -439,7 +446,7 @@ describe("Star Quick Dice", () => {
     });
 
     function visiblePanel() {
-      return ["dice", "layout", "reset"].find(
+      return ["dice", "layout", "reset", "extra"].find(
         name => !html.find(`[data-panel="${name}"]`).hasClass("sqd-tab-panel-hidden")
       );
     }
@@ -453,9 +460,10 @@ describe("Star Quick Dice", () => {
         expect(activeTab()).toBe("dice");
       });
 
-      it("layout and reset tabs are not active on open", () => {
+      it("layout, reset, and extra tabs are not active on open", () => {
         expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
         expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='extra']").hasClass("sqd-tab-active")).toBe(false);
       });
 
       it("only the dice panel is visible on open", () => {
@@ -470,18 +478,20 @@ describe("Star Quick Dice", () => {
         expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(false);
       });
 
-      it("hides the dice and reset panels", () => {
+      it("hides the dice, reset, and extra panels", () => {
         expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
         expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='extra']").hasClass("sqd-tab-panel-hidden")).toBe(true);
       });
 
       it("marks the layout tab active", () => {
         expect(activeTab()).toBe("layout");
       });
 
-      it("removes active class from dice and reset tabs", () => {
+      it("removes active class from dice, reset, and extra tabs", () => {
         expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
         expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='extra']").hasClass("sqd-tab-active")).toBe(false);
       });
     });
 
@@ -492,18 +502,20 @@ describe("Star Quick Dice", () => {
         expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(false);
       });
 
-      it("hides the dice and layout panels", () => {
+      it("hides the dice, layout, and extra panels", () => {
         expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
         expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='extra']").hasClass("sqd-tab-panel-hidden")).toBe(true);
       });
 
       it("marks the reset tab active", () => {
         expect(activeTab()).toBe("reset");
       });
 
-      it("removes active class from dice and layout tabs", () => {
+      it("removes active class from dice, layout, and extra tabs", () => {
         expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
         expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='extra']").hasClass("sqd-tab-active")).toBe(false);
       });
     });
 
@@ -527,25 +539,160 @@ describe("Star Quick Dice", () => {
       });
     });
 
-    it("cycles through all three tabs correctly", () => {
+    it("cycles through all four tabs correctly", () => {
       html.find("[data-tab='layout']").trigger("click");
       expect(visiblePanel()).toBe("layout");
 
       html.find("[data-tab='reset']").trigger("click");
       expect(visiblePanel()).toBe("reset");
 
+      html.find("[data-tab='extra']").trigger("click");
+      expect(visiblePanel()).toBe("extra");
+
       html.find("[data-tab='dice']").trigger("click");
       expect(visiblePanel()).toBe("dice");
     });
 
     it("exactly one panel is visible at all times", () => {
-      for (const tab of ["layout", "reset", "dice", "layout"]) {
+      for (const tab of ["layout", "reset", "extra", "dice", "layout"]) {
         html.find(`[data-tab='${tab}']`).trigger("click");
-        const visibleCount = ["dice", "layout", "reset"].filter(
+        const visibleCount = ["dice", "layout", "reset", "extra"].filter(
           name => !html.find(`[data-panel="${name}"]`).hasClass("sqd-tab-panel-hidden")
         ).length;
         expect(visibleCount).toBe(1);
       }
+    });
+
+    describe("clicking Extra tab", () => {
+      beforeEach(() => { html.find("[data-tab='extra']").trigger("click"); });
+
+      it("shows the extra panel", () => {
+        expect(html.find("[data-panel='extra']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      });
+
+      it("hides the dice, layout, and reset panels", () => {
+        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+      });
+
+      it("marks the extra tab active", () => {
+        expect(activeTab()).toBe("extra");
+      });
+
+      it("removes active class from dice, layout, and reset tabs", () => {
+        expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
+      });
+    });
+  });
+
+  describe("config dialog — extra tab", () => {
+    function openExtra(flagOverrides = {}) {
+      setupBar(flagOverrides);
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find("[data-tab='extra']").trigger("click");
+      return html;
+    }
+
+    it("checkbox is unchecked when barHidden flag is not set", () => {
+      const html = openExtra();
+      expect(html.find(".sqd-hide-bar-checkbox").prop("checked")).toBe(false);
+    });
+
+    it("checkbox is checked when barHidden flag is true", () => {
+      const html = openExtra({ barHidden: true });
+      expect(html.find(".sqd-hide-bar-checkbox").prop("checked")).toBe(true);
+    });
+
+    it("checking the checkbox saves barHidden as true", async () => {
+      const html = openExtra();
+      global.game.settings.set.mockClear();
+      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
+      await new Promise(r => setTimeout(r, 0));
+      expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", true);
+    });
+
+    it("unchecking the checkbox saves barHidden as false", async () => {
+      const html = openExtra({ barHidden: true });
+      global.game.settings.set.mockClear();
+      html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
+      await new Promise(r => setTimeout(r, 0));
+      expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", false);
+    });
+
+    it("checking the checkbox hides the bar", async () => {
+      const html = openExtra();
+      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
+      await new Promise(r => setTimeout(r, 0));
+      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+    });
+
+    it("unchecking the checkbox shows the bar", async () => {
+      const html = openExtra({ barHidden: true });
+      html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
+      await new Promise(r => setTimeout(r, 0));
+      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+    });
+
+    it("hides the bar on load when barHidden flag is true", () => {
+      setupBar({ barHidden: true });
+      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+    });
+
+    it("shows the bar on load when barHidden flag is not set", () => {
+      setupBar();
+      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+    });
+
+    describe("restore button", () => {
+      it("is hidden when the bar is visible on load", () => {
+        setupBar();
+        expect(document.querySelector(".sqd-restore-btn").style.display).toBe("none");
+      });
+
+      it("is visible when barHidden flag is true on load", () => {
+        setupBar({ barHidden: true });
+        expect(document.querySelector(".sqd-restore-btn").style.display).not.toBe("none");
+      });
+
+      it("clicking it shows the bar", async () => {
+        setupBar({ barHidden: true });
+        document.querySelector(".sqd-restore-btn").click();
+        await new Promise(r => setTimeout(r, 0));
+        expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+      });
+
+      it("clicking it hides itself", async () => {
+        setupBar({ barHidden: true });
+        document.querySelector(".sqd-restore-btn").click();
+        await new Promise(r => setTimeout(r, 0));
+        expect(document.querySelector(".sqd-restore-btn").style.display).toBe("none");
+      });
+
+      it("clicking it saves barHidden as false", async () => {
+        setupBar({ barHidden: true });
+        global.game.settings.set.mockClear();
+        document.querySelector(".sqd-restore-btn").click();
+        await new Promise(r => setTimeout(r, 0));
+        expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", false);
+      });
+
+      it("checking the hide bar checkbox shows the restore button", async () => {
+        const html = openExtra();
+        html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
+        await new Promise(r => setTimeout(r, 0));
+        expect(document.querySelector(".sqd-restore-btn").style.display).not.toBe("none");
+      });
+
+      it("unchecking the hide bar checkbox hides the restore button", async () => {
+        const html = openExtra({ barHidden: true });
+        html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
+        await new Promise(r => setTimeout(r, 0));
+        expect(document.querySelector(".sqd-restore-btn").style.display).toBe("none");
+      });
     });
   });
 

@@ -257,6 +257,33 @@
     text-align: center;
 }
 
+/* ── Extra tab ───────────────────────────────────────────────────────────── */
+
+.sqd-extra-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 6px 0 10px;
+}
+
+.sqd-extra-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.sqd-extra-item input[type="checkbox"] {
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.sqd-extra-item p {
+    color: #888;
+    font-size: 12px;
+    margin: 3px 0 0;
+}
+
 /* ── Reset tab ───────────────────────────────────────────────────────────── */
 
 .sqd-reset-panel {
@@ -292,3 +319,22 @@
 
 .sqd-reset-position-btn:hover,
 .sqd-reset-dice-btn:hover { background: #444; }
+
+/* ── Restore button ──────────────────────────────────────────────────────── */
+
+.sqd-restore-btn {
+    position: fixed;
+    z-index: 70;
+    left: 10px;
+    top: 10px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 8px;
+    pointer-events: all;
+}
+
+.sqd-restore-btn:hover { background: rgba(0,0,0,0.75); }

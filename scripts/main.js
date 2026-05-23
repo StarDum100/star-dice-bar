@@ -136,10 +136,11 @@ function renderLayoutEditor(html, pendingGrid) {
     panel.append(editor);
 }
 
-async function openConfig(diceBar) {
+async function openConfig(diceBar, restoreBtn) {
     const savedVisibility = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
-    const pendingCustom = [...getCustomDice()];
-    const pendingGrid   = getBarGrid().map(row => [...row]);
+    const barHidden       = game.settings.get("star-quick-dice", "barHidden");
+    const pendingCustom   = [...getCustomDice()];
+    const pendingGrid     = getBarGrid().map(row => [...row]);
 
     function makeRow(formula, isCustom) {
         const checked = savedVisibility[formula] !== false ? "checked" : "";
@@ -163,6 +164,7 @@ async function openConfig(diceBar) {
             <button type="button" class="sqd-tab sqd-tab-active" data-tab="dice">Dice</button>
             <button type="button" class="sqd-tab" data-tab="layout">Layout</button>
             <button type="button" class="sqd-tab" data-tab="reset">Reset</button>
+            <button type="button" class="sqd-tab" data-tab="extra">Extra</button>
         </div>
         <div class="sqd-tab-panel" data-panel="dice">
             <table class="sqd-config-table">
@@ -181,6 +183,17 @@ async function openConfig(diceBar) {
             </div>
         </div>
         <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="layout"></div>
+        <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="extra">
+            <div class="sqd-extra-panel">
+                <label class="sqd-extra-item">
+                    <input type="checkbox" class="sqd-hide-bar-checkbox"${barHidden ? " checked" : ""}>
+                    <div>
+                        <strong>Hide Button Bar</strong>
+                        <p>Remove the button bar from the screen. A small button will appear to bring it back.</p>
+                    </div>
+                </label>
+            </div>
+        </div>
         <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="reset">
             <div class="sqd-reset-panel">
                 <div class="sqd-reset-item">
@@ -362,12 +375,32 @@ async function openConfig(diceBar) {
             $html.on("keydown", ".sqd-formula-input", (e) => {
                 if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
             });
+
+            // ── Extra tab ─────────────────────────────────────────────────
+            $html.on("change", ".sqd-hide-bar-checkbox", async (e) => {
+                const hidden = e.target.checked;
+                await game.settings.set("star-quick-dice", "barHidden", hidden);
+                if (hidden) { diceBar.hide(); restoreBtn.show(); }
+                else        { diceBar.show(); restoreBtn.hide(); }
+            });
         }
     });
 }
 
 Hooks.once("init", () => {
     console.log("Star Quick Dice | Initialized");
+    game.settings.register("star-quick-dice", "barHidden", {
+        name: "Hide Button Bar",
+        hint: "Remove the button bar from the screen. Use the restore button on screen or toggle this setting to bring it back.",
+        scope: "client",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: (value) => {
+            if (value) { $(".quick-dice-bar").hide(); $(".sqd-restore-btn").show(); }
+            else        { $(".quick-dice-bar").show(); $(".sqd-restore-btn").hide(); }
+        },
+    });
 });
 
 Hooks.once("ready", () => {
@@ -379,12 +412,26 @@ Hooks.once("ready", () => {
         <div class="sqd-dice-grid"></div>
     </div>`);
 
+    const restoreBtn = $('<button class="sqd-restore-btn" title="Show Quick Dice Bar">Quick Dice</button>');
     $("body").append(diceBar);
+    $("body").append(restoreBtn);
     applyBarPosition(diceBar);
     renderBar(diceBar);
     initBarDrag(diceBar);
+    if (game.settings.get("star-quick-dice", "barHidden")) {
+        diceBar.hide();
+        restoreBtn.show();
+    } else {
+        restoreBtn.hide();
+    }
 
-    diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar));
+    restoreBtn.click(async () => {
+        await game.settings.set("star-quick-dice", "barHidden", false);
+        diceBar.show();
+        restoreBtn.hide();
+    });
+
+    diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar, restoreBtn));
 });
 
 if (typeof module !== "undefined") module.exports = {};
