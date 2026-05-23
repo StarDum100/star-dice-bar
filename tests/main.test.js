@@ -647,53 +647,6 @@ describe("Star Quick Dice", () => {
       expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
     });
 
-    describe("restore button", () => {
-      it("is hidden when the bar is visible on load", () => {
-        setupBar();
-        expect(document.querySelector(".sqd-restore-btn").style.display).toBe("none");
-      });
-
-      it("is visible when barHidden flag is true on load", () => {
-        setupBar({ barHidden: true });
-        expect(document.querySelector(".sqd-restore-btn").style.display).not.toBe("none");
-      });
-
-      it("clicking it shows the bar", async () => {
-        setupBar({ barHidden: true });
-        document.querySelector(".sqd-restore-btn").click();
-        await new Promise(r => setTimeout(r, 0));
-        expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
-      });
-
-      it("clicking it hides itself", async () => {
-        setupBar({ barHidden: true });
-        document.querySelector(".sqd-restore-btn").click();
-        await new Promise(r => setTimeout(r, 0));
-        expect(document.querySelector(".sqd-restore-btn").style.display).toBe("none");
-      });
-
-      it("clicking it saves barHidden as false", async () => {
-        setupBar({ barHidden: true });
-        global.game.settings.set.mockClear();
-        document.querySelector(".sqd-restore-btn").click();
-        await new Promise(r => setTimeout(r, 0));
-        expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", false);
-      });
-
-      it("checking the hide bar checkbox shows the restore button", async () => {
-        const html = openExtra();
-        html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
-        await new Promise(r => setTimeout(r, 0));
-        expect(document.querySelector(".sqd-restore-btn").style.display).not.toBe("none");
-      });
-
-      it("unchecking the hide bar checkbox hides the restore button", async () => {
-        const html = openExtra({ barHidden: true });
-        html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
-        await new Promise(r => setTimeout(r, 0));
-        expect(document.querySelector(".sqd-restore-btn").style.display).toBe("none");
-      });
-    });
   });
 
   describe("config dialog — layout tab", () => {

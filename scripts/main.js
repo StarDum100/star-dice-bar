@@ -136,7 +136,7 @@ function renderLayoutEditor(html, pendingGrid) {
     panel.append(editor);
 }
 
-async function openConfig(diceBar, restoreBtn) {
+async function openConfig(diceBar) {
     const savedVisibility = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const barHidden       = game.settings.get("star-quick-dice", "barHidden");
     const pendingCustom   = [...getCustomDice()];
@@ -189,7 +189,7 @@ async function openConfig(diceBar, restoreBtn) {
                     <input type="checkbox" class="sqd-hide-bar-checkbox"${barHidden ? " checked" : ""}>
                     <div>
                         <strong>Hide Button Bar</strong>
-                        <p>Remove the button bar from the screen. A small button will appear to bring it back.</p>
+                        <p>Remove the button bar from the screen. To restore it, uncheck this option in Configure Game Settings.</p>
                     </div>
                 </label>
             </div>
@@ -380,8 +380,8 @@ async function openConfig(diceBar, restoreBtn) {
             $html.on("change", ".sqd-hide-bar-checkbox", async (e) => {
                 const hidden = e.target.checked;
                 await game.settings.set("star-quick-dice", "barHidden", hidden);
-                if (hidden) { diceBar.hide(); restoreBtn.show(); }
-                else        { diceBar.show(); restoreBtn.hide(); }
+                if (hidden) diceBar.hide();
+                else        diceBar.show();
             });
         }
     });
@@ -397,8 +397,8 @@ Hooks.once("init", () => {
         type: Boolean,
         default: false,
         onChange: (value) => {
-            if (value) { $(".quick-dice-bar").hide(); $(".sqd-restore-btn").show(); }
-            else        { $(".quick-dice-bar").show(); $(".sqd-restore-btn").hide(); }
+            if (value) $(".quick-dice-bar").hide();
+            else       $(".quick-dice-bar").show();
         },
     });
 });
@@ -412,26 +412,13 @@ Hooks.once("ready", () => {
         <div class="sqd-dice-grid"></div>
     </div>`);
 
-    const restoreBtn = $('<button class="sqd-restore-btn" title="Show Quick Dice Bar">Quick Dice</button>');
     $("body").append(diceBar);
-    $("body").append(restoreBtn);
     applyBarPosition(diceBar);
     renderBar(diceBar);
     initBarDrag(diceBar);
-    if (game.settings.get("star-quick-dice", "barHidden")) {
-        diceBar.hide();
-        restoreBtn.show();
-    } else {
-        restoreBtn.hide();
-    }
+    if (game.settings.get("star-quick-dice", "barHidden")) diceBar.hide();
 
-    restoreBtn.click(async () => {
-        await game.settings.set("star-quick-dice", "barHidden", false);
-        diceBar.show();
-        restoreBtn.hide();
-    });
-
-    diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar, restoreBtn));
+    diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar));
 });
 
 if (typeof module !== "undefined") module.exports = {};
