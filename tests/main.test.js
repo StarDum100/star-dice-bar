@@ -41,7 +41,9 @@ global.foundry.applications.api.DialogV2.wait = jest.fn().mockImplementation((op
   global.foundry.applications.api.DialogV2.__lastOptions = options;
   const instance = { render: jest.fn(), close: jest.fn(), element: document.createElement("div") };
   global.foundry.applications.api.DialogV2.__lastInstance = instance;
-  return new Promise(() => {});
+  let resolveDialog;
+  global.foundry.applications.api.DialogV2.__resolveDialog = (val) => resolveDialog(val);
+  return new Promise(r => { resolveDialog = r; });
 });
 
 require("../scripts/main.js");
@@ -857,29 +859,105 @@ describe("Star Quick Dice", () => {
       expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(false);
     });
 
-    it("reset position button saves null barPosition flag", async () => {
+    it("reset position button does not immediately save the barPosition flag", () => {
       html.find(".sqd-reset-position-btn").trigger("click");
-      await new Promise(r => setTimeout(r, 0));
+      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "barPosition", expect.anything());
+    });
+
+    it("reset position button applies default position immediately for preview", () => {
+      setupBar({ barPosition: { left: 200, top: 150 } });
+      document.querySelector(".sqd-config-btn").click();
+      const { html: localHtml } = openDialogHtml();
+      localHtml.find(".sqd-reset-position-btn").trigger("click");
+      const bar = document.querySelector(".quick-dice-bar");
+      expect(bar.style.left).not.toBe("200px");
+      expect(bar.style.top).not.toBe("150px");
+    });
+
+    it("reset position saves null barPosition flag when Save is clicked", async () => {
+      html.find(".sqd-reset-position-btn").trigger("click");
+      global.game.user.setFlag.mockClear();
+      const container = document.createElement("div");
+      const options = global.foundry.applications.api.DialogV2.__lastOptions;
+      container.innerHTML = options.content;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
       expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "barPosition", null);
     });
 
-    it("reset position button does not close the dialog", async () => {
-      html.find(".sqd-reset-position-btn").trigger("click");
+    it("reset position does not save barPosition flag when Save is clicked without reset", async () => {
+      global.game.user.setFlag.mockClear();
+      const container = document.createElement("div");
+      const options = global.foundry.applications.api.DialogV2.__lastOptions;
+      container.innerHTML = options.content;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
+      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "barPosition", expect.anything());
+    });
+
+    it("reset position restores original bar position when dialog is closed without Save", async () => {
+      setupBar({ barPosition: { left: 200, top: 150 } });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
+      localHtml.find(".sqd-reset-position-btn").trigger("click");
+      global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
+      expect(document.querySelector(".quick-dice-bar").style.left).toBe("200px");
+      expect(document.querySelector(".quick-dice-bar").style.top).toBe("150px");
+    });
+
+    it("reset position button does not close the dialog", () => {
+      html.find(".sqd-reset-position-btn").trigger("click");
       expect(global.foundry.applications.api.DialogV2.__lastInstance.close).not.toHaveBeenCalled();
     });
 
-    it("reset dice button unsets customDice, barGrid, and diceVisibility flags", async () => {
+    it("reset dice button does not immediately write any flags", () => {
       html.find(".sqd-reset-dice-btn").trigger("click");
-      await new Promise(r => setTimeout(r, 0));
-      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "customDice");
-      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "barGrid");
-      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "diceVisibility");
+      expect(global.game.user.unsetFlag).not.toHaveBeenCalled();
+      expect(global.game.user.setFlag).not.toHaveBeenCalled();
     });
 
-    it("reset dice button does not close the dialog", async () => {
-      html.find(".sqd-reset-dice-btn").trigger("click");
+    it("reset dice button saves reset state when Save is clicked", async () => {
+      setupBar({ customDice: ["1d105"] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
+      localHtml.find(".sqd-reset-dice-btn").trigger("click");
+      global.game.user.setFlag.mockClear();
+      const options = global.foundry.applications.api.DialogV2.__lastOptions;
+      const container = document.createElement("div");
+      container.innerHTML = options.content;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "customDice", []);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "barGrid", [["1d4","1d6","1d8","1d10","1d12","1d20","1d100"]]
+      );
+    });
+
+    it("reset dice button previews built-in dice only on the bar immediately", () => {
+      setupBar({ customDice: ["1d105"] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
+      localHtml.find(".sqd-reset-dice-btn").trigger("click");
+      expect(document.querySelectorAll("button[data-roll]")).toHaveLength(7);
+    });
+
+    it("reset dice button restores original bar dice when dialog is closed without Save", async () => {
+      setupBar({ customDice: ["1d105"] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
+      localHtml.find(".sqd-reset-dice-btn").trigger("click");
+      global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
+      expect(document.querySelectorAll("button[data-roll]")).toHaveLength(8);
+    });
+
+    it("reset dice button does not close the dialog", () => {
+      html.find(".sqd-reset-dice-btn").trigger("click");
       expect(global.foundry.applications.api.DialogV2.__lastInstance.close).not.toHaveBeenCalled();
     });
 

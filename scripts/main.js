@@ -27,8 +27,7 @@ function getVisibility(customDice = getCustomDice()) {
     return visibility;
 }
 
-function applyBarPosition(diceBar) {
-    const savedPos = game.user.getFlag("star-quick-dice", "barPosition");
+function applyBarPosition(diceBar, savedPos = game.user.getFlag("star-quick-dice", "barPosition")) {
     const pos = savedPos ?? {
         left: Math.round((window.innerWidth - diceBar.outerWidth()) / 2),
         top: 10,
@@ -74,11 +73,11 @@ function makeRollClickHandler(formula) {
     };
 }
 
-function renderBar(diceBar) {
-    const customDice = getCustomDice();
-    const grid = getBarGrid(customDice);
-    const visibility = getVisibility(customDice);
-    const knownDice = new Set([...BUILT_IN_DICE, ...customDice]);
+function renderBar(diceBar, overrides = {}) {
+    const customDice = overrides.customDice ?? getCustomDice();
+    const grid       = overrides.grid       ?? getBarGrid(customDice);
+    const visibility = overrides.visibility ?? getVisibility(customDice);
+    const knownDice  = new Set([...BUILT_IN_DICE, ...customDice]);
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
     const multirow = grid.length > 1;
@@ -159,6 +158,11 @@ async function openConfig(diceBar) {
     const pendingCustom   = [...getCustomDice()];
     const pendingGrid     = getBarGrid().map(row => [...row]);
 
+    let saved                = false;
+    let pendingResetPosition = false;
+    let originalPosition     = null;
+    let pendingResetDice     = false;
+
     function makeRow(formula, isCustom) {
         const safe    = escapeHtml(formula);
         const checked = savedVisibility[formula] !== false ? "checked" : "";
@@ -233,7 +237,7 @@ async function openConfig(diceBar) {
     `;
 
     await foundry.applications.api.DialogV2.wait({
-        window: { title: "Star Quick Dice — Configure" },
+        window:      { title: "Star Quick Dice — Configure" },
         content,
         rejectClose: false,
         buttons: [
@@ -241,6 +245,7 @@ async function openConfig(diceBar) {
                 action: "save",
                 label: "Save",
                 callback: async (event, button, dialog) => {
+                    saved = true;
                     const $html = $(dialog.element);
                     const newVisibility = {};
                     $html.find("tbody input[type=checkbox]").each(function () {
@@ -249,6 +254,9 @@ async function openConfig(diceBar) {
                     await game.user.setFlag("star-quick-dice", "diceVisibility", newVisibility);
                     await game.user.setFlag("star-quick-dice", "customDice", pendingCustom);
                     await game.user.setFlag("star-quick-dice", "barGrid", pendingGrid);
+                    if (pendingResetPosition) {
+                        await game.user.setFlag("star-quick-dice", "barPosition", null);
+                    }
                     renderBar(diceBar);
                 }
             },
@@ -320,17 +328,19 @@ async function openConfig(diceBar) {
             });
 
             // ── Reset tab ─────────────────────────────────────────────────
-            $html.on("click", ".sqd-reset-position-btn", async () => {
-                await game.user.setFlag("star-quick-dice", "barPosition", null);
-                applyBarPosition(diceBar);
+            $html.on("click", ".sqd-reset-position-btn", () => {
+                if (!pendingResetPosition) {
+                    originalPosition = {
+                        left: parseInt(diceBar.css("left")),
+                        top:  parseInt(diceBar.css("top")),
+                    };
+                }
+                pendingResetPosition = true;
+                applyBarPosition(diceBar, null);
             });
 
-            $html.on("click", ".sqd-reset-dice-btn", async () => {
-                await game.user.unsetFlag("star-quick-dice", "customDice");
-                await game.user.unsetFlag("star-quick-dice", "barGrid");
-                await game.user.unsetFlag("star-quick-dice", "diceVisibility");
-
-                // Reset in-memory state so the dialog reflects the change immediately
+            $html.on("click", ".sqd-reset-dice-btn", () => {
+                pendingResetDice = true;
                 pendingCustom.splice(0);
                 pendingGrid.splice(0, pendingGrid.length, [...BUILT_IN_DICE]);
 
@@ -338,7 +348,8 @@ async function openConfig(diceBar) {
                     renderLayoutEditor($html, pendingGrid);
                 }
 
-                renderBar(diceBar);
+                const resetVisibility = Object.fromEntries(BUILT_IN_DICE.map(f => [f, true]));
+                renderBar(diceBar, { customDice: [], grid: [[...BUILT_IN_DICE]], visibility: resetVisibility });
             });
 
             // ── Dice tab: delete ──────────────────────────────────────────
@@ -392,6 +403,11 @@ async function openConfig(diceBar) {
             });
         }
     });
+
+    if (!saved) {
+        if (pendingResetPosition) diceBar.css(originalPosition);
+        if (pendingResetDice)     renderBar(diceBar);
+    }
 }
 
 Hooks.once("init", () => {
