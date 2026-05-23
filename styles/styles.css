@@ -156,7 +156,9 @@
     border: 1px solid #555;
     border-radius: 4px;
     color: white;
-    padding: 4px 8px;
+    padding: 0 8px;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .sqd-add-btn {
@@ -166,7 +168,9 @@
     border-radius: 4px;
     color: white;
     cursor: pointer;
-    padding: 4px 10px;
+    padding: 0 10px;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .sqd-add-btn:hover { background: #444; }
