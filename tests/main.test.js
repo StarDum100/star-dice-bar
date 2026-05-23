@@ -485,6 +485,23 @@ describe("Star Quick Dice", () => {
       expect(global.Dialog.__lastInstance.close).not.toHaveBeenCalled();
     });
 
+    it("reset dice button resets the layout tab to default order when layout is visible", async () => {
+      setupBar({ barGrid: [["1d20"], ["1d4", "1d6"]] });
+      document.querySelector(".sqd-config-btn").click();
+      const { html, options } = openDialogHtml();
+      // Switch to layout tab so it is visible
+      html.find("[data-tab='layout']").trigger("click");
+      expect(html.find(".sqd-layout-row")).toHaveLength(2);
+
+      global.game.user.getFlag.mockReturnValue(undefined);
+      html.find(".sqd-reset-dice-btn").trigger("click");
+      await new Promise(r => setTimeout(r, 0));
+
+      // Layout tab should now show a single row with 7 built-in dice
+      expect(html.find(".sqd-layout-row")).toHaveLength(1);
+      expect(html.find(".sqd-layout-tile")).toHaveLength(7);
+    });
+
     it("reset dice button re-renders the bar with only built-in dice", async () => {
       setupBar({ customDice: [{ label: "d105", formula: "1d105" }] });
       document.querySelector(".sqd-config-btn").click();

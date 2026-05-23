@@ -311,6 +311,15 @@ function openConfig(diceBar) {
                 await game.user.unsetFlag("star-quick-dice", "customDice");
                 await game.user.unsetFlag("star-quick-dice", "barGrid");
                 await game.user.unsetFlag("star-quick-dice", "diceVisibility");
+
+                // Reset in-memory state so the dialog reflects the change immediately
+                pendingCustom.splice(0);
+                pendingGrid.splice(0, pendingGrid.length, BUILT_IN_DICE.map(d => d.formula));
+
+                if (!html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
+                    renderLayoutEditor(html, pendingGrid, diceMap);
+                }
+
                 renderBar(diceBar);
             });
 
