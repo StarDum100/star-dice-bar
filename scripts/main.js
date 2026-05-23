@@ -85,7 +85,14 @@ function renderBar(diceBar) {
     const diceMap = new Map([...BUILT_IN_DICE, ...getCustomDice()].map(d => [d.formula, d]));
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
-    diceBar.toggleClass("sqd-bar-multirow", grid.length > 1);
+    const multirow = grid.length > 1;
+    diceBar.toggleClass("sqd-bar-multirow", multirow);
+    if (multirow) {
+        const maxCols = Math.max(...grid.map(r => r.length));
+        gridEl.css("--sqd-cols", maxCols);
+    } else {
+        gridEl.css("--sqd-cols", "");
+    }
 
     grid.forEach(row => {
         const rowEl = $('<div class="sqd-bar-row">');
@@ -381,9 +388,11 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
     const diceBar = $(`<div class="quick-dice-bar">
-        <span class="sqd-bar-handle" title="Drag to move bar">&#8801;</span>
+        <div class="sqd-bar-controls">
+            <span class="sqd-bar-handle" title="Drag to move bar">&#8801;</span>
+            <button class="sqd-config-btn" title="Configure Dice">&#9881;</button>
+        </div>
         <div class="sqd-dice-grid"></div>
-        <button class="sqd-config-btn" title="Configure Dice">&#9881;</button>
     </div>`);
 
     $("body").append(diceBar);

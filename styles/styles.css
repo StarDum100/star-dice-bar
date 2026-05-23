@@ -59,21 +59,28 @@
 
 .sqd-config-btn:hover { opacity: 1; }
 
-/* Multi-row bar: handle + config stack in left column, grid on right */
-.quick-dice-bar.sqd-bar-multirow {
-    display: grid;
-    grid-template-columns: auto auto;
-    grid-template-areas:
-        "handle grid"
-        "config grid";
-    column-gap: 4px;
-    row-gap: 0;
-    align-items: start;
+/* Single-row: controls wrapper is transparent so handle/config participate
+   directly in the bar's flex layout, ordered handle | dice | config */
+.sqd-bar-controls { display: contents; }
+.sqd-bar-handle   { order: 1; }
+.sqd-dice-grid    { order: 2; }
+.sqd-config-btn   { order: 3; }
+
+/* Multi-row: controls become a stacked column pinned to the top-left */
+.quick-dice-bar.sqd-bar-multirow .sqd-bar-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    order: 0;
 }
 
-.quick-dice-bar.sqd-bar-multirow .sqd-bar-handle { grid-area: handle; }
-.quick-dice-bar.sqd-bar-multirow .sqd-dice-grid  { grid-area: grid;   }
-.quick-dice-bar.sqd-bar-multirow .sqd-config-btn { grid-area: config; }
+/* Multi-row: buttons fill available width in equal columns */
+.quick-dice-bar.sqd-bar-multirow .sqd-bar-row {
+    display: grid;
+    grid-template-columns: repeat(var(--sqd-cols), minmax(0, 1fr));
+    gap: 4px;
+}
 
 /* ── Config dialog tabs ──────────────────────────────────────────────────── */
 
