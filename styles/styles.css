@@ -45,6 +45,27 @@
     text-align: center;
 }
 
+.sqd-drag-handle {
+    color: #777;
+    cursor: grab;
+    font-size: 16px;
+    text-align: center;
+    width: 20px;
+    user-select: none;
+}
+
+.sqd-drag-handle:active {
+    cursor: grabbing;
+}
+
+.sqd-dragging {
+    opacity: 0.4;
+}
+
+.sqd-drag-over {
+    outline: 2px solid #888;
+}
+
 .sqd-delete-cell {
     text-align: center;
     width: 32px;

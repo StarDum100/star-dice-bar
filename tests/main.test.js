@@ -65,6 +65,54 @@ describe("Star Quick Dice", () => {
       expect(btn.textContent.trim()).toBe(label);
     });
 
+    describe("ordering", () => {
+      it("renders buttons in saved order from diceOrder flag", () => {
+        global.game.user.getFlag.mockImplementation((ns, key) => {
+          if (key === "diceOrder") return ["1d20", "1d4", "1d6", "1d8", "1d10", "1d12", "1d100"];
+          return undefined;
+        });
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        hookCallbacks["ready"]();
+        const buttons = [...document.querySelectorAll(".quick-dice-bar button[data-roll]")];
+        expect(buttons[0].dataset.roll).toBe("1d20");
+        expect(buttons[1].dataset.roll).toBe("1d4");
+      });
+
+      it("renders buttons in default order when no diceOrder flag is set", () => {
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        hookCallbacks["ready"]();
+        const buttons = [...document.querySelectorAll(".quick-dice-bar button[data-roll]")];
+        expect(buttons[0].dataset.roll).toBe("1d4");
+        expect(buttons[6].dataset.roll).toBe("1d100");
+      });
+
+      it("appends dice not present in the saved order at the end", () => {
+        global.game.user.getFlag.mockImplementation((ns, key) => {
+          if (key === "diceOrder") return ["1d20", "1d4"];
+          return undefined;
+        });
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        hookCallbacks["ready"]();
+        const buttons = [...document.querySelectorAll(".quick-dice-bar button[data-roll]")];
+        expect(buttons[0].dataset.roll).toBe("1d20");
+        expect(buttons[1].dataset.roll).toBe("1d4");
+        // remaining dice appended in original order
+        expect(buttons[2].dataset.roll).toBe("1d6");
+      });
+
+      it("ignores unknown formulas in the saved order without crashing", () => {
+        global.game.user.getFlag.mockImplementation((ns, key) => {
+          if (key === "diceOrder") return ["1d999", "1d4", "1d6"];
+          return undefined;
+        });
+        document.body.innerHTML = '<div id="ui-top"></div>';
+        expect(() => hookCallbacks["ready"]()).not.toThrow();
+        // 1d999 is unknown so only 7 built-in dice render
+        const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
+        expect(buttons).toHaveLength(7);
+      });
+    });
+
     describe("custom dice", () => {
       it("renders custom dice from saved flags", () => {
         global.game.user.getFlag.mockImplementation((ns, key) => {

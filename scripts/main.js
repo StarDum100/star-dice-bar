@@ -16,22 +16,36 @@ function getCustomDice() {
     return game.user.getFlag("star-quick-dice", "customDice") ?? [];
 }
 
+function getDiceOrder() {
+    return game.user.getFlag("star-quick-dice", "diceOrder") ?? [];
+}
+
+function getOrderedDice() {
+    const allDice = [...BUILT_IN_DICE, ...getCustomDice()];
+    const order = getDiceOrder();
+    if (!order.length) return allDice;
+    const diceMap = new Map(allDice.map(d => [d.formula, d]));
+    const ordered = order.map(f => diceMap.get(f)).filter(Boolean);
+    const orderedSet = new Set(order);
+    return [...ordered, ...allDice.filter(d => !orderedSet.has(d.formula))];
+}
+
 function getVisibility() {
     const saved = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const visibility = {};
-    for (const die of [...BUILT_IN_DICE, ...getCustomDice()]) {
+    for (const die of getOrderedDice()) {
         visibility[die.formula] = saved[die.formula] !== false;
     }
     return visibility;
 }
 
 function renderBar(diceBar) {
-    const allDice = [...BUILT_IN_DICE, ...getCustomDice()];
+    const ordered = getOrderedDice();
     const visibility = getVisibility();
 
     diceBar.find("button[data-roll]").remove();
 
-    const buttons = allDice.map(({ label, formula }) => {
+    const buttons = ordered.map(({ label, formula }) => {
         const btn = $("<button>").attr("data-roll", formula).text(label);
         if (!visibility[formula]) btn.hide();
         btn.click(async () => {
@@ -59,6 +73,7 @@ function openConfig(diceBar) {
             : "";
         return `
             <tr data-formula="${formula}">
+                <td class="sqd-drag-handle" title="Drag to reorder">&#8285;</td>
                 <td>${label}</td>
                 <td>${formula}</td>
                 <td class="sqd-checkbox-cell"><input type="checkbox" name="${formula}" ${checked}></td>
@@ -70,11 +85,12 @@ function openConfig(diceBar) {
     const content = `
         <table class="sqd-config-table">
             <thead>
-                <tr><th>Die</th><th>Formula</th><th>Visible</th><th></th></tr>
+                <tr><th></th><th>Die</th><th>Formula</th><th>Visible</th><th></th></tr>
             </thead>
             <tbody>
-                ${BUILT_IN_DICE.map(({ label, formula }) => makeRow(label, formula, false)).join("")}
-                ${pendingCustom.map(({ label, formula }) => makeRow(label, formula, true)).join("")}
+                ${getOrderedDice().map(({ label, formula }) =>
+                    makeRow(label, formula, pendingCustom.some(d => d.formula === formula))
+                ).join("")}
             </tbody>
         </table>
         <div class="sqd-add-row">
@@ -94,8 +110,12 @@ function openConfig(diceBar) {
                     html.find("input[type=checkbox]").each(function () {
                         newVisibility[this.name] = this.checked;
                     });
+                    const newOrder = html.find("tbody tr").map(function () {
+                        return $(this).data("formula");
+                    }).get();
                     await game.user.setFlag("star-quick-dice", "diceVisibility", newVisibility);
                     await game.user.setFlag("star-quick-dice", "customDice", pendingCustom);
+                    await game.user.setFlag("star-quick-dice", "diceOrder", newOrder);
                     renderBar(diceBar);
                 }
             },
@@ -103,6 +123,51 @@ function openConfig(diceBar) {
         },
         default: "save",
         render: (html) => {
+            const tbody = html.find("tbody")[0];
+            let dragSrc = null;
+
+            html.on("mousedown", ".sqd-drag-handle", (e) => {
+                $(e.currentTarget).closest("tr").attr("draggable", "true");
+            });
+
+            html.on("dragstart", "tr", (e) => {
+                if (!$(e.currentTarget).attr("draggable")) return;
+                dragSrc = e.currentTarget;
+                e.originalEvent.dataTransfer.effectAllowed = "move";
+                setTimeout(() => $(dragSrc).addClass("sqd-dragging"), 0);
+            });
+
+            html.on("dragend", "tr", (e) => {
+                $(e.currentTarget).removeClass("sqd-dragging").removeAttr("draggable");
+                html.find("tr").removeClass("sqd-drag-over");
+                dragSrc = null;
+            });
+
+            html.on("dragover", "tr", (e) => {
+                if (!dragSrc || e.currentTarget === dragSrc) return;
+                e.preventDefault();
+                html.find("tr").removeClass("sqd-drag-over");
+                $(e.currentTarget).addClass("sqd-drag-over");
+            });
+
+            html.on("dragleave", "tr", (e) => {
+                $(e.currentTarget).removeClass("sqd-drag-over");
+            });
+
+            html.on("drop", "tr", (e) => {
+                e.preventDefault();
+                $(e.currentTarget).removeClass("sqd-drag-over");
+                if (!dragSrc || dragSrc === e.currentTarget) return;
+                const rows = [...tbody.querySelectorAll("tr")];
+                const srcIdx = rows.indexOf(dragSrc);
+                const tgtIdx = rows.indexOf(e.currentTarget);
+                if (srcIdx < tgtIdx) {
+                    e.currentTarget.after(dragSrc);
+                } else {
+                    e.currentTarget.before(dragSrc);
+                }
+            });
+
             html.on("click", ".sqd-delete-btn", (e) => {
                 const row = $(e.currentTarget).closest("tr");
                 const formula = row.data("formula");
@@ -129,7 +194,6 @@ function openConfig(diceBar) {
                 input.val("").focus();
             });
 
-            // Allow pressing Enter in the input to trigger Add
             html.on("keydown", ".sqd-formula-input", (e) => {
                 if (e.key === "Enter") html.find(".sqd-add-btn").trigger("click");
             });
