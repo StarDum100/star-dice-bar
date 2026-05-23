@@ -15,14 +15,15 @@
 
 .sqd-dice-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 4px;
-    align-items: center;
 }
 
-.sqd-row-break {
-    flex-basis: 100%;
-    height: 0;
+.sqd-bar-row {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
 }
 
 .quick-dice-bar button {
@@ -57,6 +58,22 @@
 }
 
 .sqd-config-btn:hover { opacity: 1; }
+
+/* Multi-row bar: handle + config stack in left column, grid on right */
+.quick-dice-bar.sqd-bar-multirow {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+        "handle grid"
+        "config grid";
+    column-gap: 4px;
+    row-gap: 0;
+    align-items: start;
+}
+
+.quick-dice-bar.sqd-bar-multirow .sqd-bar-handle { grid-area: handle; }
+.quick-dice-bar.sqd-bar-multirow .sqd-dice-grid  { grid-area: grid;   }
+.quick-dice-bar.sqd-bar-multirow .sqd-config-btn { grid-area: config; }
 
 /* ── Config dialog tabs ──────────────────────────────────────────────────── */
 

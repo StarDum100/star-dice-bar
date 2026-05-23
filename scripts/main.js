@@ -85,17 +85,19 @@ function renderBar(diceBar) {
     const diceMap = new Map([...BUILT_IN_DICE, ...getCustomDice()].map(d => [d.formula, d]));
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
+    diceBar.toggleClass("sqd-bar-multirow", grid.length > 1);
 
-    grid.forEach((row, rowIdx) => {
-        if (rowIdx > 0) gridEl.append($('<span class="sqd-row-break">'));
+    grid.forEach(row => {
+        const rowEl = $('<div class="sqd-bar-row">');
         row.forEach(formula => {
             const die = diceMap.get(formula);
             if (!die) return;
             const btn = $("<button>").attr("data-roll", formula).text(die.label);
             if (!visibility[formula]) btn.hide();
             btn.click(makeRollClickHandler(formula));
-            gridEl.append(btn);
+            rowEl.append(btn);
         });
+        gridEl.append(rowEl);
     });
 }
 

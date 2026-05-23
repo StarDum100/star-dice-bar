@@ -106,7 +106,7 @@ describe("Star Quick Dice", () => {
 
       it("supports multiple rows from barGrid", () => {
         setupBar({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
-        expect(document.querySelector(".sqd-row-break")).not.toBeNull();
+        expect(document.querySelectorAll(".sqd-bar-row")).toHaveLength(2);
         expect(document.querySelectorAll("button[data-roll]")).toHaveLength(4);
       });
 
@@ -114,6 +114,16 @@ describe("Star Quick Dice", () => {
         setupBar({ barGrid: [["1d999", "1d4"]] });
         expect(() => {}).not.toThrow();
         expect(document.querySelectorAll("button[data-roll]")).toHaveLength(1);
+      });
+
+      it("adds sqd-bar-multirow class when barGrid has multiple rows", () => {
+        setupBar({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
+        expect(document.querySelector(".quick-dice-bar").classList.contains("sqd-bar-multirow")).toBe(true);
+      });
+
+      it("does not add sqd-bar-multirow class for a single-row barGrid", () => {
+        setupBar();
+        expect(document.querySelector(".quick-dice-bar").classList.contains("sqd-bar-multirow")).toBe(false);
       });
     });
 
