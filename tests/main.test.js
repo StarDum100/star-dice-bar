@@ -675,33 +675,61 @@ describe("Star Quick Dice", () => {
       expect(html.find(".sqd-hide-bar-checkbox").prop("checked")).toBe(true);
     });
 
-    it("checking the checkbox saves barHidden as true", async () => {
+    it("checking the checkbox does not immediately save the setting", () => {
       const html = openExtra();
       global.game.settings.set.mockClear();
       html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
-      await new Promise(r => setTimeout(r, 0));
+      expect(global.game.settings.set).not.toHaveBeenCalled();
+    });
+
+    it("checking the checkbox does not immediately hide the bar", () => {
+      const html = openExtra();
+      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
+      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+    });
+
+    it("Save saves barHidden as true when checkbox is checked", async () => {
+      const html = openExtra();
+      html.find(".sqd-hide-bar-checkbox").prop("checked", true);
+      global.game.settings.set.mockClear();
+      const options = global.foundry.applications.api.DialogV2.__lastOptions;
+      const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
       expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", true);
     });
 
-    it("unchecking the checkbox saves barHidden as false", async () => {
+    it("Save saves barHidden as false when checkbox is unchecked", async () => {
       const html = openExtra({ barHidden: true });
+      html.find(".sqd-hide-bar-checkbox").prop("checked", false);
       global.game.settings.set.mockClear();
-      html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
-      await new Promise(r => setTimeout(r, 0));
+      const options = global.foundry.applications.api.DialogV2.__lastOptions;
+      const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
       expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", false);
     });
 
-    it("checking the checkbox hides the bar", async () => {
+    it("Save hides the bar when checkbox is checked", async () => {
       const html = openExtra();
-      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
-      await new Promise(r => setTimeout(r, 0));
+      html.find(".sqd-hide-bar-checkbox").prop("checked", true);
+      const options = global.foundry.applications.api.DialogV2.__lastOptions;
+      const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
       expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
     });
 
-    it("unchecking the checkbox shows the bar", async () => {
-      const html = openExtra({ barHidden: true });
-      html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
-      await new Promise(r => setTimeout(r, 0));
+    it("Save shows the bar when checkbox is unchecked", async () => {
+      setupBar({ barHidden: true });
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find("[data-tab='extra']").trigger("click");
+      html.find(".sqd-hide-bar-checkbox").prop("checked", false);
+      const options = global.foundry.applications.api.DialogV2.__lastOptions;
+      const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
       expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
     });
 

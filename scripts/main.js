@@ -211,7 +211,7 @@ async function openConfig(diceBar) {
                     <input type="checkbox" class="sqd-hide-bar-checkbox"${barHidden ? " checked" : ""}>
                     <div>
                         <strong>Hide Button Bar</strong>
-                        <p>Remove the button bar from the screen. To restore it, uncheck this option in Configure Game Settings.</p>
+                        <p>Hide the button bar from the screen. Changes take effect when you click Save. To restore it, uncheck this option in Configure Game Settings.</p>
                     </div>
                 </label>
             </div>
@@ -257,6 +257,10 @@ async function openConfig(diceBar) {
                     if (pendingResetPosition) {
                         await game.user.setFlag("star-quick-dice", "barPosition", null);
                     }
+                    const newBarHidden = $html.find(".sqd-hide-bar-checkbox").prop("checked");
+                    await game.settings.set("star-quick-dice", "barHidden", newBarHidden);
+                    if (newBarHidden) diceBar.hide();
+                    else              diceBar.show();
                     renderBar(diceBar);
                 }
             },
@@ -394,13 +398,6 @@ async function openConfig(diceBar) {
                 if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
             });
 
-            // ── Extra tab ─────────────────────────────────────────────────
-            $html.on("change", ".sqd-hide-bar-checkbox", async (e) => {
-                const hidden = e.target.checked;
-                await game.settings.set("star-quick-dice", "barHidden", hidden);
-                if (hidden) diceBar.hide();
-                else        diceBar.show();
-            });
         }
     });
 
