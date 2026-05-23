@@ -239,7 +239,7 @@
 }
 
 .sqd-layout-hint {
-    color: #777;
+    color: #444;
     font-size: 11px;
     font-style: italic;
     margin: 6px 0 12px;
@@ -247,7 +247,7 @@
 }
 
 .sqd-layout-empty {
-    color: #777;
+    color: #444;
     font-style: italic;
     padding: 16px 0;
     text-align: center;
@@ -264,13 +264,12 @@
 
 .sqd-reset-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .sqd-reset-item p {
-    color: #aaa;
+    color: #444;
     font-size: 12px;
     margin: 3px 0 0;
 }

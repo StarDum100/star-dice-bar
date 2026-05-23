@@ -201,14 +201,14 @@ function openConfig(diceBar) {
                 <div class="sqd-reset-item">
                     <div>
                         <strong>Reset Bar Position</strong>
-                        <p>Move the button bar back to the default position at the top center of the screen.</p>
+                        <p>Move the button bar to the default position at the top center of the screen.</p>
                     </div>
                     <button type="button" class="sqd-reset-position-btn">Reset Position</button>
                 </div>
                 <div class="sqd-reset-item">
                     <div>
                         <strong>Reset Dice Buttons</strong>
-                        <p>Remove all custom dice and restore the default visibility and order.</p>
+                        <p>Remove all custom dice and restore the default visibility and layout.</p>
                     </div>
                     <button type="button" class="sqd-reset-dice-btn">Reset Dice</button>
                 </div>
