@@ -150,7 +150,7 @@ function renderLayoutEditor(html, pendingGrid, diceMap) {
     panel.append(editor);
 }
 
-function openConfig(diceBar) {
+async function openConfig(diceBar) {
     const savedVisibility = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const pendingCustom = [...getCustomDice()];
     const pendingGrid   = getBarGrid().map(row => [...row]);
@@ -216,15 +216,18 @@ function openConfig(diceBar) {
         </div>
     `;
 
-    const dialogInstance = new Dialog({
-        title: "Star Quick Dice — Configure",
+    await foundry.applications.api.DialogV2.wait({
+        window: { title: "Star Quick Dice — Configure" },
         content,
-        buttons: {
-            save: {
+        rejectClose: false,
+        buttons: [
+            {
+                action: "save",
                 label: "Save",
-                callback: async (html) => {
+                callback: async (event, button, dialog) => {
+                    const $html = $(dialog.element);
                     const newVisibility = {};
-                    html.find("input[type=checkbox]").each(function () {
+                    $html.find("input[type=checkbox]").each(function () {
                         newVisibility[this.name] = this.checked;
                     });
                     await game.user.setFlag("star-quick-dice", "diceVisibility", newVisibility);
@@ -233,47 +236,47 @@ function openConfig(diceBar) {
                     renderBar(diceBar);
                 }
             },
-            cancel: { label: "Cancel" }
-        },
-        default: "save",
-        render: (html) => {
+            { action: "cancel", label: "Cancel", default: true }
+        ],
+        render: (event, dialog) => {
+            const $html = $(dialog.element);
             // ── Tab switching ──────────────────────────────────────────────
-            html.on("click", ".sqd-tab", (e) => {
+            $html.on("click", ".sqd-tab", (e) => {
                 const tab = e.currentTarget.dataset.tab;
-                html.find(".sqd-tab").removeClass("sqd-tab-active");
+                $html.find(".sqd-tab").removeClass("sqd-tab-active");
                 $(e.currentTarget).addClass("sqd-tab-active");
-                html.find(".sqd-tab-panel").addClass("sqd-tab-panel-hidden");
-                html.find(`[data-panel="${tab}"]`).removeClass("sqd-tab-panel-hidden");
-                if (tab === "layout") renderLayoutEditor(html, pendingGrid, diceMap);
+                $html.find(".sqd-tab-panel").addClass("sqd-tab-panel-hidden");
+                $html.find(`[data-panel="${tab}"]`).removeClass("sqd-tab-panel-hidden");
+                if (tab === "layout") renderLayoutEditor($html, pendingGrid, diceMap);
             });
 
             // ── Layout tab drag-and-drop ───────────────────────────────────
             let dragIndex = -1;
 
-            html.on("dragstart", ".sqd-layout-tile", (e) => {
+            $html.on("dragstart", ".sqd-layout-tile", (e) => {
                 dragIndex = parseInt($(e.currentTarget).data("index"));
                 e.originalEvent.dataTransfer.effectAllowed = "move";
                 setTimeout(() => $(e.currentTarget).addClass("sqd-dragging"), 0);
             });
 
-            html.on("dragend", ".sqd-layout-tile", () => {
-                html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-dragging sqd-slot-over");
+            $html.on("dragend", ".sqd-layout-tile", () => {
+                $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-dragging sqd-slot-over");
                 dragIndex = -1;
             });
 
-            html.on("dragover", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+            $html.on("dragover", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
                 const idx = parseInt($(e.currentTarget).data("index"));
                 if (dragIndex === -1 || idx === dragIndex) return;
                 e.preventDefault();
-                html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-slot-over");
+                $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-slot-over");
                 $(e.currentTarget).addClass("sqd-slot-over");
             });
 
-            html.on("dragleave", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+            $html.on("dragleave", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
                 $(e.currentTarget).removeClass("sqd-slot-over");
             });
 
-            html.on("drop", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+            $html.on("drop", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
                 e.preventDefault();
                 const tgtIdx = parseInt($(e.currentTarget).data("index"));
                 const srcIdx = dragIndex;
@@ -293,10 +296,10 @@ function openConfig(diceBar) {
                     const row = flat.slice(r * numCols, (r + 1) * numCols);
                     if (row.length > 0) pendingGrid.push(row);
                 }
-                renderLayoutEditor(html, pendingGrid, diceMap);
+                renderLayoutEditor($html, pendingGrid, diceMap);
             });
 
-            html.on("change", ".sqd-rows-input", (e) => {
+            $html.on("change", ".sqd-rows-input", (e) => {
                 const flat = pendingGrid.flat();
                 let n = parseInt(e.target.value);
                 if (isNaN(n) || n < 1) n = 1;
@@ -308,16 +311,16 @@ function openConfig(diceBar) {
                     const row = flat.slice(r * numCols, (r + 1) * numCols);
                     if (row.length > 0) pendingGrid.push(row);
                 }
-                renderLayoutEditor(html, pendingGrid, diceMap);
+                renderLayoutEditor($html, pendingGrid, diceMap);
             });
 
             // ── Reset tab ─────────────────────────────────────────────────
-            html.on("click", ".sqd-reset-position-btn", async () => {
+            $html.on("click", ".sqd-reset-position-btn", async () => {
                 await game.user.setFlag("star-quick-dice", "barPosition", null);
                 applyBarPosition(diceBar);
             });
 
-            html.on("click", ".sqd-reset-dice-btn", async () => {
+            $html.on("click", ".sqd-reset-dice-btn", async () => {
                 await game.user.unsetFlag("star-quick-dice", "customDice");
                 await game.user.unsetFlag("star-quick-dice", "barGrid");
                 await game.user.unsetFlag("star-quick-dice", "diceVisibility");
@@ -326,15 +329,15 @@ function openConfig(diceBar) {
                 pendingCustom.splice(0);
                 pendingGrid.splice(0, pendingGrid.length, BUILT_IN_DICE.map(d => d.formula));
 
-                if (!html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
-                    renderLayoutEditor(html, pendingGrid, diceMap);
+                if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
+                    renderLayoutEditor($html, pendingGrid, diceMap);
                 }
 
                 renderBar(diceBar);
             });
 
             // ── Dice tab: delete ──────────────────────────────────────────
-            html.on("click", ".sqd-delete-btn", (e) => {
+            $html.on("click", ".sqd-delete-btn", (e) => {
                 const row     = $(e.currentTarget).closest("tr");
                 const formula = row.data("formula");
                 pendingCustom.splice(pendingCustom.findIndex(d => d.formula === formula), 1);
@@ -350,8 +353,8 @@ function openConfig(diceBar) {
             });
 
             // ── Dice tab: add ─────────────────────────────────────────────
-            html.on("click", ".sqd-add-btn", () => {
-                const input = html.find(".sqd-formula-input");
+            $html.on("click", ".sqd-add-btn", () => {
+                const input = $html.find(".sqd-formula-input");
                 const raw   = input.val().trim().toLowerCase();
 
                 if (!/^\d+d\d+$/.test(raw)) {
@@ -369,17 +372,15 @@ function openConfig(diceBar) {
                 if (pendingGrid.length === 0) pendingGrid.push([die.formula]);
                 else pendingGrid[pendingGrid.length - 1].push(die.formula);
 
-                html.find("tbody").append(makeRow(die.label, die.formula, true));
+                $html.find("tbody").append(makeRow(die.label, die.formula, true));
                 input.val("").focus();
             });
 
-            html.on("keydown", ".sqd-formula-input", (e) => {
-                if (e.key === "Enter") html.find(".sqd-add-btn").trigger("click");
+            $html.on("keydown", ".sqd-formula-input", (e) => {
+                if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
             });
         }
     });
-
-    dialogInstance.render(true);
 }
 
 Hooks.once("init", () => {

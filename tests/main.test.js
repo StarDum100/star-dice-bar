@@ -20,11 +20,23 @@ global.game = {
 global.ui = {
   notifications: { warn: jest.fn() },
 };
-global.Dialog = jest.fn().mockImplementation((options) => {
-  global.Dialog.__lastOptions = options;
-  const instance = { render: jest.fn(), close: jest.fn() };
-  global.Dialog.__lastInstance = instance;
-  return instance;
+global.foundry = {
+  applications: {
+    api: {
+      DialogV2: jest.fn().mockImplementation((options) => {
+        global.foundry.applications.api.DialogV2.__lastOptions = options;
+        const instance = { render: jest.fn(), close: jest.fn(), element: document.createElement("div") };
+        global.foundry.applications.api.DialogV2.__lastInstance = instance;
+        return instance;
+      }),
+    },
+  },
+};
+global.foundry.applications.api.DialogV2.wait = jest.fn().mockImplementation((options) => {
+  global.foundry.applications.api.DialogV2.__lastOptions = options;
+  const instance = { render: jest.fn(), close: jest.fn(), element: document.createElement("div") };
+  global.foundry.applications.api.DialogV2.__lastInstance = instance;
+  return new Promise(() => {});
 });
 
 require("../scripts/main.js");
@@ -32,11 +44,13 @@ require("../scripts/main.js");
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function openDialogHtml() {
-  const options = global.Dialog.__lastOptions;
+  const options = global.foundry.applications.api.DialogV2.__lastOptions;
+  const instance = global.foundry.applications.api.DialogV2.__lastInstance;
   const container = document.createElement("div");
   container.innerHTML = options.content;
+  instance.element = container;
+  options.render(new Event("render"), instance);
   const html = $(container);
-  options.render(html);
   return { html, options };
 }
 
@@ -437,7 +451,8 @@ describe("Star Quick Dice", () => {
       global.game.user.setFlag.mockClear();
       const container = document.createElement("div");
       container.innerHTML = options.content;
-      await options.buttons.save.callback($(container));
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
         "star-quick-dice", "barGrid", expect.any(Array)
       );
@@ -468,7 +483,7 @@ describe("Star Quick Dice", () => {
     it("reset position button does not close the dialog", async () => {
       html.find(".sqd-reset-position-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
-      expect(global.Dialog.__lastInstance.close).not.toHaveBeenCalled();
+      expect(global.foundry.applications.api.DialogV2.__lastInstance.close).not.toHaveBeenCalled();
     });
 
     it("reset dice button unsets customDice, barGrid, and diceVisibility flags", async () => {
@@ -482,7 +497,7 @@ describe("Star Quick Dice", () => {
     it("reset dice button does not close the dialog", async () => {
       html.find(".sqd-reset-dice-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
-      expect(global.Dialog.__lastInstance.close).not.toHaveBeenCalled();
+      expect(global.foundry.applications.api.DialogV2.__lastInstance.close).not.toHaveBeenCalled();
     });
 
     it("reset dice button resets the layout tab to default order when layout is visible", async () => {
@@ -509,8 +524,10 @@ describe("Star Quick Dice", () => {
       global.game.user.getFlag.mockReturnValue(undefined);
       const container = document.createElement("div");
       container.innerHTML = options.content;
+      const instance = global.foundry.applications.api.DialogV2.__lastInstance;
+      instance.element = container;
+      options.render(null, instance);
       const localHtml = $(container);
-      options.render(localHtml);
       localHtml.find(".sqd-reset-dice-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
       expect(document.querySelectorAll("button[data-roll]")).toHaveLength(7);
