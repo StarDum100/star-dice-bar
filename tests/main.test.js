@@ -96,8 +96,8 @@ describe("Star Quick Dice", () => {
     });
 
     it.each([
-      ["d4", "1d4"], ["d6", "1d6"], ["d8", "1d8"], ["d10", "1d10"],
-      ["d12", "1d12"], ["d20", "1d20"], ["d100", "1d100"],
+      ["1d4", "1d4"], ["1d6", "1d6"], ["1d8", "1d8"], ["1d10", "1d10"],
+      ["1d12", "1d12"], ["1d20", "1d20"], ["1d100", "1d100"],
     ])("%s button has correct label and data-roll", (label, formula) => {
       const btn = document.querySelector(`[data-roll="${formula}"]`);
       expect(btn).not.toBeNull();
@@ -235,7 +235,7 @@ describe("Star Quick Dice", () => {
     }
 
     it.each([
-      ["1d4", "d4"], ["1d105", "d105"], ["2d6", "2d6"], ["3d8", "3d8"],
+      ["1d4", "1d4"], ["1d105", "1d105"], ["2d6", "2d6"], ["3d8", "3d8"],
     ])("formulaToLabel(%s) === %s", (formula, expected) => {
       renderWithLabel(formula, expected);
       const btn = document.querySelector(`[data-roll="${formula}"]`);
@@ -371,8 +371,8 @@ describe("Star Quick Dice", () => {
     it("renders the correct label on each layout tile", () => {
       const html = openLayout();
       const labels = [...html.find(".sqd-layout-tile")].map(el => el.textContent.trim());
-      expect(labels).toContain("d4");
-      expect(labels).toContain("d20");
+      expect(labels).toContain("1d4");
+      expect(labels).toContain("1d20");
     });
 
     it("renders a rows input showing the current row count", () => {
@@ -440,8 +440,8 @@ describe("Star Quick Dice", () => {
       // result: d6, d4, d8, d10, d12, d20, d100
       expect(html.find(".sqd-layout-tile")).toHaveLength(7);
       const labels = [...html.find(".sqd-layout-tile")].map(el => el.textContent.trim());
-      expect(labels[0]).toBe("d6");
-      expect(labels[1]).toBe("d4");
+      expect(labels[0]).toBe("1d6");
+      expect(labels[1]).toBe("1d4");
     });
 
     it("saves barGrid flag on save", async () => {

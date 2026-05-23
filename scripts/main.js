@@ -1,15 +1,15 @@
 const BUILT_IN_DICE = [
-    { label: "d4",   formula: "1d4"   },
-    { label: "d6",   formula: "1d6"   },
-    { label: "d8",   formula: "1d8"   },
-    { label: "d10",  formula: "1d10"  },
-    { label: "d12",  formula: "1d12"  },
-    { label: "d20",  formula: "1d20"  },
-    { label: "d100", formula: "1d100" },
+    { label: "1d4",   formula: "1d4"   },
+    { label: "1d6",   formula: "1d6"   },
+    { label: "1d8",   formula: "1d8"   },
+    { label: "1d10",  formula: "1d10"  },
+    { label: "1d12",  formula: "1d12"  },
+    { label: "1d20",  formula: "1d20"  },
+    { label: "1d100", formula: "1d100" },
 ];
 
 function formulaToLabel(formula) {
-    return formula.replace(/^1d/, "d");
+    return formula;
 }
 
 
@@ -164,7 +164,6 @@ async function openConfig(diceBar) {
         return `
             <tr data-formula="${formula}">
                 <td>${label}</td>
-                <td>${formula}</td>
                 <td class="sqd-checkbox-cell"><input type="checkbox" name="${formula}" ${checked}></td>
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
@@ -182,7 +181,7 @@ async function openConfig(diceBar) {
         <div class="sqd-tab-panel" data-panel="dice">
             <table class="sqd-config-table">
                 <thead>
-                    <tr><th>Die</th><th>Formula</th><th>Visible</th><th></th></tr>
+                    <tr><th>Dice</th><th>Visible</th><th></th></tr>
                 </thead>
                 <tbody>
                     ${flatDice.map(({ label, formula }) =>
