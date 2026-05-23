@@ -18,6 +18,13 @@ global.game = {
     setFlag: jest.fn().mockResolvedValue(undefined),
   },
 };
+global.ui = {
+  notifications: { warn: jest.fn() },
+};
+global.Dialog = jest.fn().mockImplementation((options) => {
+  global.Dialog.__lastOptions = options;
+  return { render: jest.fn() };
+});
 
 require("../scripts/main.js");
 
@@ -258,6 +265,84 @@ describe("Star Quick Dice", () => {
         renderWithLabel("1d999", '<img src=x onerror="window.__xssImg=true">');
         expect(window.__xssImg).toBeUndefined();
       });
+    });
+  });
+
+  describe("config dialog — add button warnings", () => {
+    let html;
+
+    beforeEach(() => {
+      global.game.user.getFlag.mockReturnValue(undefined);
+      global.ui.notifications.warn.mockClear();
+      document.body.innerHTML = '<div id="ui-top"></div>';
+      hookCallbacks["ready"]();
+
+      // Open the config dialog and call the render callback with the dialog content
+      document.querySelector(".sqd-config-btn").click();
+      const options = global.Dialog.__lastOptions;
+      const container = document.createElement("div");
+      container.innerHTML = options.content;
+      html = $(container);
+      options.render(html);
+    });
+
+    function attemptAdd(formula) {
+      html.find(".sqd-formula-input").val(formula);
+      html.find(".sqd-add-btn").trigger("click");
+    }
+
+    it("warns with the correct message when the formula is empty", () => {
+      attemptAdd("");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula has no digits", () => {
+      attemptAdd("abc");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula is missing the die size", () => {
+      attemptAdd("2d");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula is missing the multiplier", () => {
+      attemptAdd("d6");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula contains special characters", () => {
+      attemptAdd("2d!!");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when the formula contains a script injection attempt", () => {
+      attemptAdd("<script>alert(1)</script>");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+      );
+    });
+
+    it("warns when a valid formula already exists", () => {
+      attemptAdd("1d20");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: 1d20 already exists."
+      );
+    });
+
+    it("does not warn when the formula is valid and new", () => {
+      attemptAdd("1d105");
+      expect(global.ui.notifications.warn).not.toHaveBeenCalled();
     });
   });
 
