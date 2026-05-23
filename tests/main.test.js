@@ -25,18 +25,7 @@ global.game = {
 global.ui = {
   notifications: { warn: jest.fn() },
 };
-global.foundry = {
-  applications: {
-    api: {
-      DialogV2: jest.fn().mockImplementation((options) => {
-        global.foundry.applications.api.DialogV2.__lastOptions = options;
-        const instance = { render: jest.fn(), close: jest.fn(), element: document.createElement("div") };
-        global.foundry.applications.api.DialogV2.__lastInstance = instance;
-        return instance;
-      }),
-    },
-  },
-};
+global.foundry = { applications: { api: { DialogV2: {} } } };
 global.foundry.applications.api.DialogV2.wait = jest.fn().mockImplementation((options) => {
   global.foundry.applications.api.DialogV2.__lastOptions = options;
   const instance = { render: jest.fn(), close: jest.fn(), element: document.createElement("div") };
@@ -917,25 +906,28 @@ describe("Star Quick Dice", () => {
       expect(bar.style.top).not.toBe("150px");
     });
 
-    it("reset position saves null barPosition flag when Save is clicked", async () => {
+    it("reset position unsets the barPosition flag when Save is clicked", async () => {
       html.find(".sqd-reset-position-btn").trigger("click");
       global.game.user.setFlag.mockClear();
+      global.game.user.unsetFlag.mockClear();
       const container = document.createElement("div");
       const options = global.foundry.applications.api.DialogV2.__lastOptions;
       container.innerHTML = options.content;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "barPosition", null);
+      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "barPosition");
     });
 
     it("reset position does not save barPosition flag when Save is clicked without reset", async () => {
       global.game.user.setFlag.mockClear();
+      global.game.user.unsetFlag.mockClear();
       const container = document.createElement("div");
       const options = global.foundry.applications.api.DialogV2.__lastOptions;
       container.innerHTML = options.content;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
       expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "barPosition", expect.anything());
+      expect(global.game.user.unsetFlag).not.toHaveBeenCalledWith("star-quick-dice", "barPosition");
     });
 
     it("reset position restores original bar position when dialog is closed without Save", async () => {
@@ -986,6 +978,15 @@ describe("Star Quick Dice", () => {
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
       localHtml.find(".sqd-reset-dice-btn").trigger("click");
       expect(document.querySelectorAll("button[data-roll]")).toHaveLength(7);
+    });
+
+    it("reset dice button removes custom die rows from the dice table", () => {
+      setupBar({ customDice: ["1d105"] });
+      document.querySelector(".sqd-config-btn").click();
+      const { html: localHtml } = openDialogHtml();
+      expect(localHtml.find("tbody tr[data-formula='1d105']").length).toBe(1);
+      localHtml.find(".sqd-reset-dice-btn").trigger("click");
+      expect(localHtml.find("tbody tr[data-formula='1d105']").length).toBe(0);
     });
 
     it("reset dice button restores original bar dice when dialog is closed without Save", async () => {

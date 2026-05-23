@@ -256,7 +256,7 @@ async function openConfig(diceBar) {
                     await game.user.setFlag("star-quick-dice", "customDice", pendingCustom);
                     await game.user.setFlag("star-quick-dice", "barGrid", pendingGrid);
                     if (pendingResetPosition) {
-                        await game.user.setFlag("star-quick-dice", "barPosition", null);
+                        await game.user.unsetFlag("star-quick-dice", "barPosition");
                     }
                     const newBarHidden = $html.find(".sqd-hide-bar-checkbox").prop("checked");
                     await game.settings.set("star-quick-dice", "barHidden", newBarHidden);
@@ -348,6 +348,7 @@ async function openConfig(diceBar) {
                 pendingResetDice = true;
                 pendingCustom.splice(0);
                 pendingGrid.splice(0, pendingGrid.length, [...BUILT_IN_DICE]);
+                $html.find("tbody tr").has(".sqd-delete-btn").remove();
 
                 if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
                     renderLayoutEditor($html, pendingGrid);
@@ -359,15 +360,18 @@ async function openConfig(diceBar) {
 
             // ── Dice tab: delete ──────────────────────────────────────────
             $html.on("click", ".sqd-delete-btn", (e) => {
-                const row     = $(e.currentTarget).closest("tr");
-                const formula = row.data("formula");
-                pendingCustom.splice(pendingCustom.indexOf(formula), 1);
-                for (let r = 0; r < pendingGrid.length; r++) {
-                    const idx = pendingGrid[r].indexOf(formula);
-                    if (idx !== -1) {
-                        pendingGrid[r].splice(idx, 1);
-                        if (pendingGrid[r].length === 0) pendingGrid.splice(r, 1);
-                        break;
+                const row       = $(e.currentTarget).closest("tr");
+                const formula   = row.data("formula");
+                const customIdx = pendingCustom.indexOf(formula);
+                if (customIdx !== -1) {
+                    pendingCustom.splice(customIdx, 1);
+                    for (let r = 0; r < pendingGrid.length; r++) {
+                        const idx = pendingGrid[r].indexOf(formula);
+                        if (idx !== -1) {
+                            pendingGrid[r].splice(idx, 1);
+                            if (pendingGrid[r].length === 0) pendingGrid.splice(r, 1);
+                            break;
+                        }
                     }
                 }
                 row.remove();
