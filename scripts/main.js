@@ -112,10 +112,12 @@ function renderLayoutEditor(html, pendingGrid, diceMap) {
     const numRows = pendingGrid.length;
     const numCols = Math.ceil(flat.length / numRows);
 
+    panel.append('<p class="sqd-layout-hint">Drag any die to a slot to reorder &middot; Change the row count to reorganize the grid</p>');
+
     const controls = $('<div class="sqd-layout-controls">');
     const rowInput = $('<input type="number" class="sqd-rows-input">')
         .attr("min", 1).attr("max", flat.length).val(numRows);
-    controls.append($('<label class="sqd-rows-label">').text("Rows: ").append(rowInput));
+    controls.append($('<label class="sqd-rows-label">').text("Number of Rows: ").append(rowInput));
     panel.append(controls);
 
     const editor = $('<div class="sqd-layout-editor">');
@@ -137,7 +139,6 @@ function renderLayoutEditor(html, pendingGrid, diceMap) {
         editor.append(rowEl);
     }
     panel.append(editor);
-    panel.append('<p class="sqd-layout-hint">Drag any die to a slot to reorder &middot; Change Rows to reorganize the grid</p>');
 }
 
 function openConfig(diceBar) {
