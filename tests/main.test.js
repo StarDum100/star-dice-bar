@@ -27,7 +27,7 @@ global.Dialog = jest.fn().mockImplementation((options) => {
   return instance;
 });
 
-const { applyGridDrop } = require("../scripts/main.js");
+require("../scripts/main.js");
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -46,63 +46,6 @@ function setupBar(flagOverrides = {}) {
   hookCallbacks["ready"]();
 }
 
-// ── applyGridDrop (pure unit tests) ──────────────────────────────────────
-
-describe("applyGridDrop", () => {
-  it("inserts to the left of target in the same row", () => {
-    const grid = [["1d4", "1d6", "1d8"]];
-    applyGridDrop(grid, "1d8", "1d4", "left");
-    expect(grid).toEqual([["1d8", "1d4", "1d6"]]);
-  });
-
-  it("inserts to the right of target in the same row", () => {
-    const grid = [["1d4", "1d6", "1d8"]];
-    applyGridDrop(grid, "1d4", "1d8", "right");
-    expect(grid).toEqual([["1d6", "1d8", "1d4"]]);
-  });
-
-  it("inserts above target into a new row", () => {
-    const grid = [["1d4", "1d6", "1d8"]];
-    applyGridDrop(grid, "1d8", "1d4", "top");
-    expect(grid).toEqual([["1d8"], ["1d4", "1d6"]]);
-  });
-
-  it("inserts below target into a new row", () => {
-    const grid = [["1d4", "1d6", "1d8"]];
-    applyGridDrop(grid, "1d4", "1d8", "bottom");
-    expect(grid).toEqual([["1d6", "1d8"], ["1d4"]]);
-  });
-
-  it("moves a die across rows", () => {
-    const grid = [["1d4", "1d6"], ["1d8", "1d10"]];
-    applyGridDrop(grid, "1d8", "1d4", "right");
-    expect(grid).toEqual([["1d4", "1d8", "1d6"], ["1d10"]]);
-  });
-
-  it("removes an empty row after moving its last die", () => {
-    const grid = [["1d4"], ["1d6", "1d8"]];
-    applyGridDrop(grid, "1d4", "1d6", "right");
-    expect(grid).toEqual([["1d6", "1d4", "1d8"]]);
-  });
-
-  it("does nothing when source formula is not in the grid", () => {
-    const grid = [["1d4", "1d6"]];
-    applyGridDrop(grid, "1d99", "1d4", "left");
-    expect(grid).toEqual([["1d4", "1d6"]]);
-  });
-
-  it("does nothing when target formula is not in the grid", () => {
-    const grid = [["1d4", "1d6"]];
-    applyGridDrop(grid, "1d4", "1d99", "left");
-    expect(grid).toEqual([["1d4", "1d6"]]);
-  });
-
-  it("adjusts target column when source precedes target in the same row", () => {
-    const grid = [["1d4", "1d6", "1d8", "1d10"]];
-    applyGridDrop(grid, "1d4", "1d10", "left");
-    expect(grid).toEqual([["1d6", "1d8", "1d4", "1d10"]]);
-  });
-});
 
 // ── Star Quick Dice (integration) ────────────────────────────────────────
 
@@ -408,6 +351,11 @@ describe("Star Quick Dice", () => {
       expect(labels).toContain("d20");
     });
 
+    it("renders a rows input showing the current row count", () => {
+      const html = openLayout({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
+      expect(html.find(".sqd-rows-input").val()).toBe("2");
+    });
+
     it("renders multiple rows when barGrid has multiple rows", () => {
       const html = openLayout({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
       expect(html.find(".sqd-layout-row")).toHaveLength(2);
@@ -415,19 +363,61 @@ describe("Star Quick Dice", () => {
       expect(html.find(".sqd-layout-row").eq(1).find(".sqd-layout-tile")).toHaveLength(2);
     });
 
-    it("updates pendingGrid when a drop is applied", () => {
+    it("renders empty slots when dice do not fill the grid evenly", () => {
+      // 7 dice, 2 rows → 4 cols → 8 slots → 1 empty slot
       const html = openLayout();
-      const tiles = html.find(".sqd-layout-tile");
-      const src = tiles.eq(0); // d4
-      const tgt = tiles.eq(2); // d8
+      html.find(".sqd-rows-input").val("2").trigger("change");
+      expect(html.find(".sqd-layout-slot")).toHaveLength(1);
+    });
+
+    it("redistributes dice into new rows when the row count changes", () => {
+      const html = openLayout();
+      html.find(".sqd-rows-input").val("2").trigger("change");
+      expect(html.find(".sqd-layout-row")).toHaveLength(2);
+    });
+
+    it("clamps row count to 1 when a value less than 1 is entered", () => {
+      const html = openLayout();
+      html.find(".sqd-rows-input").val("0").trigger("change");
+      expect(html.find(".sqd-rows-input").val()).toBe("1");
+    });
+
+    it("clamps row count to number of dice when too large a value is entered", () => {
+      const html = openLayout();
+      html.find(".sqd-rows-input").val("99").trigger("change");
+      expect(html.find(".sqd-rows-input").val()).toBe("7");
+    });
+
+    it("clamps row count to 1 when a non-numeric value is entered", () => {
+      const html = openLayout();
+      html.find(".sqd-rows-input").val("abc").trigger("change");
+      expect(html.find(".sqd-rows-input").val()).toBe("1");
+    });
+
+    it("does not execute XSS in the rows input", () => {
+      window.__xssRows = undefined;
+      const html = openLayout();
+      html.find(".sqd-rows-input").val("<script>window.__xssRows=true</script>").trigger("change");
+      expect(window.__xssRows).toBeUndefined();
+      expect(html.find(".sqd-rows-input").val()).toBe("1");
+    });
+
+    it("moves a die when dropped onto another slot", () => {
+      const html = openLayout();
+      // All 7 dice in 1 row; tiles have data-index 0–6
+      const src = html.find(".sqd-layout-tile").eq(0); // d4, index 0
+      const tgt = html.find(".sqd-layout-tile").eq(2); // d8, index 2
 
       $(src).trigger({ type: "dragstart", originalEvent: { dataTransfer: { effectAllowed: "" } } });
-      $(tgt).trigger({ type: "dragover", clientX: 5, clientY: 5,
-        originalEvent: { dataTransfer: {} }, preventDefault: () => {} });
-      $(tgt).trigger({ type: "drop", preventDefault: () => {} });
+      $(tgt).trigger({ type: "dragover", preventDefault: () => {} });
+      $(tgt).trigger({ type: "drop",     preventDefault: () => {} });
 
-      // After drop the layout re-renders — tiles should still all be present
+      // d4 removed from 0, adjusted target = 2-1=1, inserted at 1
+      // result: d6, d4, d8, d10, d12, d20, d100
       expect(html.find(".sqd-layout-tile")).toHaveLength(7);
+      const labels = [...html.find(".sqd-layout-tile")].map(el => el.textContent.trim());
+      expect(labels[0]).toBe("d6");
+      expect(labels[1]).toBe("d4");
     });
 
     it("saves barGrid flag on save", async () => {

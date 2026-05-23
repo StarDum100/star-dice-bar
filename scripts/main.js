@@ -12,30 +12,6 @@ function formulaToLabel(formula) {
     return formula.replace(/^1d/, "d");
 }
 
-function applyGridDrop(grid, srcFormula, tgtFormula, zone) {
-    let srcRow = -1, srcCol = -1, tgtRow = -1, tgtCol = -1;
-    for (let r = 0; r < grid.length; r++) {
-        for (let c = 0; c < grid[r].length; c++) {
-            if (grid[r][c] === srcFormula) { srcRow = r; srcCol = c; }
-            if (grid[r][c] === tgtFormula) { tgtRow = r; tgtCol = c; }
-        }
-    }
-    if (srcRow === -1 || tgtRow === -1) return;
-
-    grid[srcRow].splice(srcCol, 1);
-
-    if (srcRow === tgtRow && srcCol < tgtCol) tgtCol--;
-
-    if (grid[srcRow].length === 0) {
-        grid.splice(srcRow, 1);
-        if (tgtRow > srcRow) tgtRow--;
-    }
-
-    if (zone === "left")        grid[tgtRow].splice(tgtCol,     0, srcFormula);
-    else if (zone === "right")  grid[tgtRow].splice(tgtCol + 1, 0, srcFormula);
-    else if (zone === "top")    grid.splice(tgtRow,     0, [srcFormula]);
-    else if (zone === "bottom") grid.splice(tgtRow + 1, 0, [srcFormula]);
-}
 
 function getCustomDice() {
     return game.user.getFlag("star-quick-dice", "customDice") ?? [];
@@ -132,20 +108,36 @@ function renderLayoutEditor(html, pendingGrid, diceMap) {
         return;
     }
 
+    const flat    = pendingGrid.flat();
+    const numRows = pendingGrid.length;
+    const numCols = Math.ceil(flat.length / numRows);
+
+    const controls = $('<div class="sqd-layout-controls">');
+    const rowInput = $('<input type="number" class="sqd-rows-input">')
+        .attr("min", 1).attr("max", flat.length).val(numRows);
+    controls.append($('<label class="sqd-rows-label">').text("Rows: ").append(rowInput));
+    panel.append(controls);
+
     const editor = $('<div class="sqd-layout-editor">');
-    pendingGrid.forEach(row => {
+    for (let r = 0; r < numRows; r++) {
         const rowEl = $('<div class="sqd-layout-row">');
-        row.forEach(formula => {
-            const die = diceMap.get(formula);
-            rowEl.append(
-                $('<div class="sqd-layout-tile" draggable="true">')
-                    .attr("data-formula", formula)
-                    .text(die ? die.label : formula)
-            );
-        });
+        for (let c = 0; c < numCols; c++) {
+            const idx = r * numCols + c;
+            if (idx < flat.length) {
+                const die = diceMap.get(flat[idx]);
+                rowEl.append(
+                    $('<div class="sqd-layout-tile" draggable="true">')
+                        .attr("data-index", idx)
+                        .text(die ? die.label : flat[idx])
+                );
+            } else {
+                rowEl.append($('<div class="sqd-layout-slot">').attr("data-index", idx));
+            }
+        }
         editor.append(rowEl);
-    });
+    }
     panel.append(editor);
+    panel.append('<p class="sqd-layout-hint">Drag any die to a slot to reorder &middot; Change Rows to reorganize the grid</p>');
 }
 
 function openConfig(diceBar) {
@@ -246,58 +238,66 @@ function openConfig(diceBar) {
             });
 
             // ── Layout tab drag-and-drop ───────────────────────────────────
-            let dragFormula = null;
+            let dragIndex = -1;
 
             html.on("dragstart", ".sqd-layout-tile", (e) => {
-                dragFormula = $(e.currentTarget).data("formula");
+                dragIndex = parseInt($(e.currentTarget).data("index"));
                 e.originalEvent.dataTransfer.effectAllowed = "move";
                 setTimeout(() => $(e.currentTarget).addClass("sqd-dragging"), 0);
             });
 
             html.on("dragend", ".sqd-layout-tile", () => {
-                html.find(".sqd-layout-tile").removeClass(
-                    "sqd-dragging sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
-                );
-                dragFormula = null;
+                html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-dragging sqd-slot-over");
+                dragIndex = -1;
             });
 
-            html.on("dragover", ".sqd-layout-tile", (e) => {
-                const tgt = $(e.currentTarget).data("formula");
-                if (!dragFormula || tgt === dragFormula) return;
+            html.on("dragover", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+                const idx = parseInt($(e.currentTarget).data("index"));
+                if (dragIndex === -1 || idx === dragIndex) return;
                 e.preventDefault();
-
-                const rect   = e.currentTarget.getBoundingClientRect();
-                const xRatio = rect.width  > 0 ? (e.clientX - rect.left) / rect.width  : 0.5;
-                const yRatio = rect.height > 0 ? (e.clientY - rect.top)  / rect.height : 0.5;
-
-                html.find(".sqd-layout-tile").removeClass(
-                    "sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
-                );
-
-                let zone;
-                if      (yRatio < 0.3) zone = "top";
-                else if (yRatio > 0.7) zone = "bottom";
-                else if (xRatio < 0.5) zone = "left";
-                else                   zone = "right";
-
-                $(e.currentTarget).addClass(`sqd-drop-${zone}`).data("current-zone", zone);
+                html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-slot-over");
+                $(e.currentTarget).addClass("sqd-slot-over");
             });
 
-            html.on("dragleave", ".sqd-layout-tile", (e) => {
-                $(e.currentTarget).removeClass(
-                    "sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
-                );
+            html.on("dragleave", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+                $(e.currentTarget).removeClass("sqd-slot-over");
             });
 
-            html.on("drop", ".sqd-layout-tile", (e) => {
+            html.on("drop", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
                 e.preventDefault();
-                const tgtFormula = $(e.currentTarget).data("formula");
-                const zone       = $(e.currentTarget).data("current-zone");
-                $(e.currentTarget).removeClass(
-                    "sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
-                );
-                if (!dragFormula || dragFormula === tgtFormula || !zone) return;
-                applyGridDrop(pendingGrid, dragFormula, tgtFormula, zone);
+                const tgtIdx = parseInt($(e.currentTarget).data("index"));
+                const srcIdx = dragIndex;
+                dragIndex = -1;
+                if (srcIdx === -1 || tgtIdx === srcIdx) return;
+
+                const flat    = pendingGrid.flat();
+                const formula = flat[srcIdx];
+                flat.splice(srcIdx, 1);
+                const adjusted = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
+                flat.splice(Math.min(adjusted, flat.length), 0, formula);
+
+                const numRows = pendingGrid.length;
+                const numCols = Math.ceil(flat.length / numRows);
+                pendingGrid.splice(0);
+                for (let r = 0; r < numRows; r++) {
+                    const row = flat.slice(r * numCols, (r + 1) * numCols);
+                    if (row.length > 0) pendingGrid.push(row);
+                }
+                renderLayoutEditor(html, pendingGrid, diceMap);
+            });
+
+            html.on("change", ".sqd-rows-input", (e) => {
+                const flat = pendingGrid.flat();
+                let n = parseInt(e.target.value);
+                if (isNaN(n) || n < 1) n = 1;
+                if (n > flat.length) n = flat.length;
+                $(e.target).val(n);
+                const numCols = Math.ceil(flat.length / n);
+                pendingGrid.splice(0);
+                for (let r = 0; r < n; r++) {
+                    const row = flat.slice(r * numCols, (r + 1) * numCols);
+                    if (row.length > 0) pendingGrid.push(row);
+                }
                 renderLayoutEditor(html, pendingGrid, diceMap);
             });
 
@@ -391,4 +391,4 @@ Hooks.once("ready", () => {
     diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar));
 });
 
-if (typeof module !== "undefined") module.exports = { applyGridDrop };
+if (typeof module !== "undefined") module.exports = {};
