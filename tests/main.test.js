@@ -23,7 +23,9 @@ global.ui = {
 };
 global.Dialog = jest.fn().mockImplementation((options) => {
   global.Dialog.__lastOptions = options;
-  return { render: jest.fn() };
+  const instance = { render: jest.fn(), close: jest.fn() };
+  global.Dialog.__lastInstance = instance;
+  return instance;
 });
 
 require("../scripts/main.js");
@@ -398,6 +400,89 @@ describe("Star Quick Dice", () => {
         "barPosition",
         expect.objectContaining({ left: expect.any(Number), top: expect.any(Number) })
       );
+    });
+  });
+
+  describe("config dialog — reset tab", () => {
+    let html;
+
+    beforeEach(() => {
+      global.game.user.getFlag.mockReturnValue(undefined);
+      global.game.user.setFlag.mockClear();
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      document.querySelector(".sqd-config-btn").click();
+      const options = global.Dialog.__lastOptions;
+      const container = document.createElement("div");
+      container.innerHTML = options.content;
+      html = $(container);
+      options.render(html);
+    });
+
+    it("shows the dice panel by default and hides the reset panel", () => {
+      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+    });
+
+    it("switches to the reset panel when the Reset tab is clicked", () => {
+      html.find("[data-tab='reset']").trigger("click");
+      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+    });
+
+    it("switches back to the dice panel when the Dice tab is clicked", () => {
+      html.find("[data-tab='reset']").trigger("click");
+      html.find("[data-tab='dice']").trigger("click");
+      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+    });
+
+    it("reset position button saves null barPosition flag", async () => {
+      html.find(".sqd-reset-position-btn").trigger("click");
+      await new Promise(r => setTimeout(r, 0));
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "barPosition", null
+      );
+    });
+
+    it("reset position button closes the dialog", async () => {
+      html.find(".sqd-reset-position-btn").trigger("click");
+      await new Promise(r => setTimeout(r, 0));
+      expect(global.Dialog.__lastInstance.close).toHaveBeenCalled();
+    });
+
+    it("reset dice button clears customDice, diceOrder, and diceVisibility flags", async () => {
+      html.find(".sqd-reset-dice-btn").trigger("click");
+      await new Promise(r => setTimeout(r, 0));
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "customDice", []);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "diceOrder", []);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "diceVisibility", {});
+    });
+
+    it("reset dice button closes the dialog", async () => {
+      html.find(".sqd-reset-dice-btn").trigger("click");
+      await new Promise(r => setTimeout(r, 0));
+      expect(global.Dialog.__lastInstance.close).toHaveBeenCalled();
+    });
+
+    it("reset dice button re-renders the bar with only built-in dice", async () => {
+      global.game.user.getFlag.mockImplementation((ns, key) => {
+        if (key === "customDice") return [{ label: "d105", formula: "1d105" }];
+        return undefined;
+      });
+      document.body.innerHTML = "";
+      hookCallbacks["ready"]();
+      document.querySelector(".sqd-config-btn").click();
+      const options = global.Dialog.__lastOptions;
+      const container = document.createElement("div");
+      container.innerHTML = options.content;
+      const localHtml = $(container);
+      global.game.user.getFlag.mockReturnValue(undefined);
+      options.render(localHtml);
+      localHtml.find(".sqd-reset-dice-btn").trigger("click");
+      await new Promise(r => setTimeout(r, 0));
+      const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
+      expect(buttons).toHaveLength(7);
     });
   });
 

@@ -8,7 +8,6 @@ const BUILT_IN_DICE = [
     { label: "d100", formula: "1d100" },
 ];
 
-
 function formulaToLabel(formula) {
     return formula.replace(/^1d/, "d");
 }
@@ -121,23 +120,47 @@ function openConfig(diceBar) {
     }
 
     const content = `
-        <table class="sqd-config-table">
-            <thead>
-                <tr><th></th><th>Die</th><th>Formula</th><th>Visible</th><th></th></tr>
-            </thead>
-            <tbody>
-                ${getOrderedDice().map(({ label, formula }) =>
-                    makeRow(label, formula, pendingCustom.some(d => d.formula === formula))
-                ).join("")}
-            </tbody>
-        </table>
-        <div class="sqd-add-row">
-            <input type="text" class="sqd-formula-input" placeholder="e.g. 2d6, 1d105">
-            <button type="button" class="sqd-add-btn">Add</button>
+        <div class="sqd-tabs">
+            <button type="button" class="sqd-tab sqd-tab-active" data-tab="dice">Dice</button>
+            <button type="button" class="sqd-tab" data-tab="reset">Reset</button>
+        </div>
+        <div class="sqd-tab-panel" data-panel="dice">
+            <table class="sqd-config-table">
+                <thead>
+                    <tr><th></th><th>Die</th><th>Formula</th><th>Visible</th><th></th></tr>
+                </thead>
+                <tbody>
+                    ${getOrderedDice().map(({ label, formula }) =>
+                        makeRow(label, formula, pendingCustom.some(d => d.formula === formula))
+                    ).join("")}
+                </tbody>
+            </table>
+            <div class="sqd-add-row">
+                <input type="text" class="sqd-formula-input" placeholder="e.g. 2d6, 1d105">
+                <button type="button" class="sqd-add-btn">Add</button>
+            </div>
+        </div>
+        <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="reset">
+            <div class="sqd-reset-panel">
+                <div class="sqd-reset-item">
+                    <div>
+                        <strong>Reset Bar Position</strong>
+                        <p>Move the button bar back to the default position at the top center of the screen.</p>
+                    </div>
+                    <button type="button" class="sqd-reset-position-btn">Reset Position</button>
+                </div>
+                <div class="sqd-reset-item">
+                    <div>
+                        <strong>Reset Dice Buttons</strong>
+                        <p>Remove all custom dice and restore the default visibility and order.</p>
+                    </div>
+                    <button type="button" class="sqd-reset-dice-btn">Reset Dice</button>
+                </div>
+            </div>
         </div>
     `;
 
-    new Dialog({
+    const dialogInstance = new Dialog({
         title: "Star Quick Dice — Configure",
         content,
         buttons: {
@@ -161,6 +184,27 @@ function openConfig(diceBar) {
         },
         default: "save",
         render: (html) => {
+            html.on("click", ".sqd-tab", (e) => {
+                html.find(".sqd-tab").removeClass("sqd-tab-active");
+                $(e.currentTarget).addClass("sqd-tab-active");
+                html.find(".sqd-tab-panel").addClass("sqd-tab-panel-hidden");
+                html.find(`[data-panel="${e.currentTarget.dataset.tab}"]`).removeClass("sqd-tab-panel-hidden");
+            });
+
+            html.on("click", ".sqd-reset-position-btn", async () => {
+                await game.user.setFlag("star-quick-dice", "barPosition", null);
+                applyBarPosition(diceBar);
+                dialogInstance.close();
+            });
+
+            html.on("click", ".sqd-reset-dice-btn", async () => {
+                await game.user.setFlag("star-quick-dice", "customDice", []);
+                await game.user.setFlag("star-quick-dice", "diceOrder", []);
+                await game.user.setFlag("star-quick-dice", "diceVisibility", {});
+                renderBar(diceBar);
+                dialogInstance.close();
+            });
+
             const tbody = html.find("tbody")[0];
             let dragSrc = null;
 
@@ -236,7 +280,8 @@ function openConfig(diceBar) {
                 if (e.key === "Enter") html.find(".sqd-add-btn").trigger("click");
             });
         }
-    }).render(true);
+    });
+    dialogInstance.render(true);
 }
 
 Hooks.once("init", () => {

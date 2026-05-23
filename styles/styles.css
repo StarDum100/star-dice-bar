@@ -49,6 +49,71 @@
     opacity: 1;
 }
 
+.sqd-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid #555;
+    margin-bottom: 10px;
+}
+
+.sqd-tab {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    color: #aaa;
+    cursor: pointer;
+    padding: 4px 14px;
+    margin-bottom: -1px;
+}
+
+.sqd-tab.sqd-tab-active {
+    background: #2c2c2c;
+    color: white;
+    border-bottom: 1px solid #2c2c2c;
+}
+
+.sqd-tab-panel-hidden {
+    display: none;
+}
+
+.sqd-reset-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 6px 0 10px;
+}
+
+.sqd-reset-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.sqd-reset-item p {
+    color: #aaa;
+    font-size: 12px;
+    margin: 3px 0 0;
+}
+
+.sqd-reset-position-btn,
+.sqd-reset-dice-btn {
+    white-space: nowrap;
+    background: #2c2c2c;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    padding: 4px 10px;
+    flex-shrink: 0;
+}
+
+.sqd-reset-position-btn:hover,
+.sqd-reset-dice-btn:hover {
+    background: #444;
+}
+
 .sqd-config-table {
     width: 100%;
     border-collapse: collapse;
