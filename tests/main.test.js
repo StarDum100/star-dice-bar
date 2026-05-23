@@ -75,6 +75,38 @@ describe("Star Quick Dice", () => {
     it("registers an init hook", () => {
       expect(global.Hooks.once).toHaveBeenCalledWith("init", expect.any(Function));
     });
+
+    it("registers the barHidden setting with client scope and correct defaults", () => {
+      global.game.settings.register.mockClear();
+      hookCallbacks["init"]();
+      expect(global.game.settings.register).toHaveBeenCalledWith(
+        "star-quick-dice",
+        "barHidden",
+        expect.objectContaining({ scope: "client", config: true, type: Boolean, default: false })
+      );
+    });
+
+    describe("barHidden onChange", () => {
+      let onChange;
+      beforeEach(() => {
+        global.game.settings.register.mockClear();
+        hookCallbacks["init"]();
+        onChange = global.game.settings.register.mock.calls
+          .find(c => c[1] === "barHidden")[2].onChange;
+      });
+
+      it("hides the bar when called with true", () => {
+        setupBar();
+        onChange(true);
+        expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+      });
+
+      it("shows the bar when called with false", () => {
+        setupBar({ barHidden: true });
+        onChange(false);
+        expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+      });
+    });
   });
 
   describe("ready hook", () => {
@@ -437,6 +469,40 @@ describe("Star Quick Dice", () => {
     });
   });
 
+  describe("config dialog — XSS in dice table", () => {
+    it("does not execute a script tag injected as a saved formula", () => {
+      window.__xssDialogScript = undefined;
+      setupBar({ customDice: ['<script>window.__xssDialogScript = true</script>'] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      expect(window.__xssDialogScript).toBeUndefined();
+    });
+
+    it("does not execute an event handler injected as a saved formula", () => {
+      window.__xssDialogAttr = undefined;
+      setupBar({ customDice: ['1d6" onmouseover="window.__xssDialogAttr=true'] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      expect(window.__xssDialogAttr).toBeUndefined();
+    });
+
+    it("does not execute an img onerror payload injected as a saved formula", () => {
+      window.__xssDialogImg = undefined;
+      setupBar({ customDice: ['<img src=x onerror="window.__xssDialogImg=true">'] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      expect(window.__xssDialogImg).toBeUndefined();
+    });
+
+    it("displays a formula containing HTML characters as literal text in the table", () => {
+      setupBar({ customDice: ['<b>1d6</b>'] });
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      const td = html.find("tbody td").filter((_, el) => el.textContent === "<b>1d6</b>");
+      expect(td.length).toBe(1);
+    });
+  });
+
   describe("config dialog — tab navigation", () => {
     let html;
     beforeEach(() => {
@@ -760,6 +826,19 @@ describe("Star Quick Dice", () => {
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
         "star-quick-dice", "barGrid", expect.any(Array)
       );
+    });
+
+    it("save does not store an empty-string key in diceVisibility", async () => {
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      const { options } = openDialogHtml();
+      global.game.user.setFlag.mockClear();
+      const container = document.createElement("div");
+      container.innerHTML = options.content;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: container });
+      const visibilityCall = global.game.user.setFlag.mock.calls.find(c => c[1] === "diceVisibility");
+      expect(Object.keys(visibilityCall[2])).not.toContain("");
     });
   });
 

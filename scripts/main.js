@@ -1,20 +1,27 @@
 const BUILT_IN_DICE = ["1d4", "1d6", "1d8", "1d10", "1d12", "1d20", "1d100"];
 
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
 
 function getCustomDice() {
     return game.user.getFlag("star-quick-dice", "customDice") ?? [];
 }
 
-function getBarGrid() {
+function getBarGrid(customDice = getCustomDice()) {
     const saved = game.user.getFlag("star-quick-dice", "barGrid");
     if (saved?.length) return saved;
-    return [[...BUILT_IN_DICE, ...getCustomDice()]];
+    return [[...BUILT_IN_DICE, ...customDice]];
 }
 
-function getVisibility() {
+function getVisibility(customDice = getCustomDice()) {
     const saved = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const visibility = {};
-    for (const formula of [...BUILT_IN_DICE, ...getCustomDice()]) {
+    for (const formula of [...BUILT_IN_DICE, ...customDice]) {
         visibility[formula] = saved[formula] !== false;
     }
     return visibility;
@@ -68,9 +75,10 @@ function makeRollClickHandler(formula) {
 }
 
 function renderBar(diceBar) {
-    const grid = getBarGrid();
-    const visibility = getVisibility();
-    const knownDice = new Set([...BUILT_IN_DICE, ...getCustomDice()]);
+    const customDice = getCustomDice();
+    const grid = getBarGrid(customDice);
+    const visibility = getVisibility(customDice);
+    const knownDice = new Set([...BUILT_IN_DICE, ...customDice]);
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
     const multirow = grid.length > 1;
@@ -136,6 +144,15 @@ function renderLayoutEditor(html, pendingGrid) {
     panel.append(editor);
 }
 
+function reshapeGrid(pendingGrid, numRows, flat = pendingGrid.flat()) {
+    const numCols = Math.ceil(flat.length / numRows);
+    pendingGrid.splice(0);
+    for (let r = 0; r < numRows; r++) {
+        const row = flat.slice(r * numCols, (r + 1) * numCols);
+        if (row.length > 0) pendingGrid.push(row);
+    }
+}
+
 async function openConfig(diceBar) {
     const savedVisibility = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const barHidden       = game.settings.get("star-quick-dice", "barHidden");
@@ -143,14 +160,15 @@ async function openConfig(diceBar) {
     const pendingGrid     = getBarGrid().map(row => [...row]);
 
     function makeRow(formula, isCustom) {
+        const safe    = escapeHtml(formula);
         const checked = savedVisibility[formula] !== false ? "checked" : "";
         const deleteBtn = isCustom
             ? `<button type="button" class="sqd-delete-btn">&#10005;</button>`
             : "";
         return `
-            <tr data-formula="${formula}">
-                <td>${formula}</td>
-                <td class="sqd-checkbox-cell"><input type="checkbox" name="${formula}" ${checked}></td>
+            <tr data-formula="${safe}">
+                <td>${safe}</td>
+                <td class="sqd-checkbox-cell"><input type="checkbox" name="${safe}" ${checked}></td>
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
         `;
@@ -225,7 +243,7 @@ async function openConfig(diceBar) {
                 callback: async (event, button, dialog) => {
                     const $html = $(dialog.element);
                     const newVisibility = {};
-                    $html.find("input[type=checkbox]").each(function () {
+                    $html.find("tbody input[type=checkbox]").each(function () {
                         newVisibility[this.name] = this.checked;
                     });
                     await game.user.setFlag("star-quick-dice", "diceVisibility", newVisibility);
@@ -287,13 +305,7 @@ async function openConfig(diceBar) {
                 const adjusted = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
                 flat.splice(Math.min(adjusted, flat.length), 0, formula);
 
-                const numRows = pendingGrid.length;
-                const numCols = Math.ceil(flat.length / numRows);
-                pendingGrid.splice(0);
-                for (let r = 0; r < numRows; r++) {
-                    const row = flat.slice(r * numCols, (r + 1) * numCols);
-                    if (row.length > 0) pendingGrid.push(row);
-                }
+                reshapeGrid(pendingGrid, pendingGrid.length, flat);
                 renderLayoutEditor($html, pendingGrid);
             });
 
@@ -303,12 +315,7 @@ async function openConfig(diceBar) {
                 if (isNaN(n) || n < 1) n = 1;
                 if (n > flat.length) n = flat.length;
                 $(e.target).val(n);
-                const numCols = Math.ceil(flat.length / n);
-                pendingGrid.splice(0);
-                for (let r = 0; r < n; r++) {
-                    const row = flat.slice(r * numCols, (r + 1) * numCols);
-                    if (row.length > 0) pendingGrid.push(row);
-                }
+                reshapeGrid(pendingGrid, n, flat);
                 renderLayoutEditor($html, pendingGrid);
             });
 
@@ -391,7 +398,7 @@ Hooks.once("init", () => {
     console.log("Star Quick Dice | Initialized");
     game.settings.register("star-quick-dice", "barHidden", {
         name: "Hide Button Bar",
-        hint: "Remove the button bar from the screen. Use the restore button on screen or toggle this setting to bring it back.",
+        hint: "Remove the button bar from the screen. Toggle this setting to bring it back.",
         scope: "client",
         config: true,
         type: Boolean,
