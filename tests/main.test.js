@@ -272,6 +272,62 @@ describe("Star Quick Dice", () => {
     });
   });
 
+  describe("large dice values", () => {
+    const LARGE_FORMULAS = [
+      ["10-digit die size",    "1d" + "1".repeat(10)],
+      ["20-digit die size",    "1d" + "1".repeat(20)],
+      ["30-digit die size",    "1d" + "1".repeat(30)],
+      ["20-digit multiplier",  "1".repeat(20) + "d6"],
+    ];
+
+    describe("bar rendering", () => {
+      it.each(LARGE_FORMULAS)(
+        "renders without crashing when saved formula has %s",
+        (_, formula) => {
+          expect(() => setupBar({ customDice: [formula] })).not.toThrow();
+        }
+      );
+
+      it.each(LARGE_FORMULAS)(
+        "displays the full formula on the button when saved formula has %s",
+        (_, formula) => {
+          setupBar({ customDice: [formula] });
+          const btn = document.querySelector(`[data-roll="${formula}"]`);
+          expect(btn).not.toBeNull();
+          expect(btn.textContent.trim()).toBe(formula);
+        }
+      );
+    });
+
+    describe("config dialog add button", () => {
+      let html;
+      beforeEach(() => {
+        global.ui.notifications.warn.mockClear();
+        setupBar();
+        document.querySelector(".sqd-config-btn").click();
+        ({ html } = openDialogHtml());
+      });
+
+      it.each(LARGE_FORMULAS)(
+        "accepts a formula with %s without warning",
+        (_, formula) => {
+          html.find(".sqd-formula-input").val(formula);
+          html.find(".sqd-add-btn").trigger("click");
+          expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+        }
+      );
+
+      it.each(LARGE_FORMULAS)(
+        "adds the row to the dice table when formula has %s",
+        (_, formula) => {
+          html.find(".sqd-formula-input").val(formula);
+          html.find(".sqd-add-btn").trigger("click");
+          expect(html.find(`tr[data-formula="${formula}"]`).length).toBe(1);
+        }
+      );
+    });
+  });
+
   describe("config dialog — add button warnings", () => {
     let html;
     beforeEach(() => {
