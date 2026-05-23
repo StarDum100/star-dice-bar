@@ -44,3 +44,51 @@
 .sqd-checkbox-cell {
     text-align: center;
 }
+
+.sqd-delete-cell {
+    text-align: center;
+    width: 32px;
+}
+
+.sqd-delete-btn {
+    background: none;
+    border: none;
+    color: #c44;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    line-height: 1;
+}
+
+.sqd-delete-btn:hover {
+    color: #f66;
+}
+
+.sqd-add-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.sqd-formula-input {
+    flex: 3;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: white;
+    padding: 4px 8px;
+}
+
+.sqd-add-btn {
+    flex: 1;
+    background: #2c2c2c;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    padding: 4px 10px;
+}
+
+.sqd-add-btn:hover {
+    background: #444;
+}
