@@ -143,12 +143,12 @@ describe("Star Quick Dice", () => {
 
     describe("custom dice", () => {
       it("renders custom dice from saved flags", () => {
-        setupBar({ customDice: [{ label: "d105", formula: "1d105" }] });
+        setupBar({ customDice: ["1d105"] });
         expect(document.querySelector('[data-roll="1d105"]')).not.toBeNull();
       });
 
       it("renders 8 buttons when one custom die is saved", () => {
-        setupBar({ customDice: [{ label: "2d6", formula: "2d6" }] });
+        setupBar({ customDice: ["2d6"] });
         expect(document.querySelectorAll("button[data-roll]")).toHaveLength(8);
       });
     });
@@ -229,48 +229,44 @@ describe("Star Quick Dice", () => {
     });
   });
 
-  describe("formulaToLabel", () => {
-    function renderWithLabel(formula, label) {
-      setupBar({ customDice: [{ label, formula }] });
-    }
-
+  describe("custom dice display", () => {
     it.each([
-      ["1d4", "1d4"], ["1d105", "1d105"], ["2d6", "2d6"], ["3d8", "3d8"],
-    ])("formulaToLabel(%s) === %s", (formula, expected) => {
-      renderWithLabel(formula, expected);
+      ["1d4"], ["1d105"], ["2d6"], ["3d8"],
+    ])("saved formula %s displays as its own label", (formula) => {
+      setupBar({ customDice: [formula] });
       const btn = document.querySelector(`[data-roll="${formula}"]`);
       expect(btn).not.toBeNull();
-      expect(btn.textContent.trim()).toBe(expected);
+      expect(btn.textContent.trim()).toBe(formula);
     });
 
-    describe("invalid label values", () => {
-      it("renders without crashing when label has no digits", () => {
-        expect(() => renderWithLabel("1d999", "abc")).not.toThrow();
+    describe("invalid saved formula values", () => {
+      it("renders without crashing when saved formula has no digits", () => {
+        expect(() => setupBar({ customDice: ["abc"] })).not.toThrow();
       });
 
-      it("renders without crashing when label is empty", () => {
-        expect(() => renderWithLabel("1d999", "")).not.toThrow();
+      it("renders without crashing when saved formula is empty", () => {
+        expect(() => setupBar({ customDice: [""] })).not.toThrow();
       });
 
-      it("renders without crashing when label contains special characters", () => {
-        expect(() => renderWithLabel("1d999", "!@#$%^&*()")).not.toThrow();
+      it("renders without crashing when saved formula contains special characters", () => {
+        expect(() => setupBar({ customDice: ["!@#$%^&*()"] })).not.toThrow();
       });
 
-      it("does not execute a script tag injected as a label", () => {
+      it("does not execute a script tag injected as a saved formula", () => {
         window.__xssLabel = undefined;
-        renderWithLabel("1d999", '<script>window.__xssLabel = true</script>');
+        setupBar({ customDice: ['<script>window.__xssLabel = true</script>'] });
         expect(window.__xssLabel).toBeUndefined();
       });
 
-      it("does not execute an event handler injected into the formula attribute", () => {
+      it("does not execute an event handler injected as a saved formula", () => {
         window.__xssFormula = undefined;
-        renderWithLabel('1d6" onmouseover="window.__xssFormula=true', "d6");
+        setupBar({ customDice: ['1d6" onmouseover="window.__xssFormula=true'] });
         expect(window.__xssFormula).toBeUndefined();
       });
 
-      it("does not execute an img onerror payload injected as a label", () => {
+      it("does not execute an img onerror payload injected as a saved formula", () => {
         window.__xssImg = undefined;
-        renderWithLabel("1d999", '<img src=x onerror="window.__xssImg=true">');
+        setupBar({ customDice: ['<img src=x onerror="window.__xssImg=true">'] });
         expect(window.__xssImg).toBeUndefined();
       });
     });
@@ -518,7 +514,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("reset dice button re-renders the bar with only built-in dice", async () => {
-      setupBar({ customDice: [{ label: "d105", formula: "1d105" }] });
+      setupBar({ customDice: ["1d105"] });
       document.querySelector(".sqd-config-btn").click();
       const { options } = openDialogHtml();
       global.game.user.getFlag.mockReturnValue(undefined);

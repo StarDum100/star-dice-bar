@@ -1,16 +1,4 @@
-const BUILT_IN_DICE = [
-    { label: "1d4",   formula: "1d4"   },
-    { label: "1d6",   formula: "1d6"   },
-    { label: "1d8",   formula: "1d8"   },
-    { label: "1d10",  formula: "1d10"  },
-    { label: "1d12",  formula: "1d12"  },
-    { label: "1d20",  formula: "1d20"  },
-    { label: "1d100", formula: "1d100" },
-];
-
-function formulaToLabel(formula) {
-    return formula;
-}
+const BUILT_IN_DICE = ["1d4", "1d6", "1d8", "1d10", "1d12", "1d20", "1d100"];
 
 
 function getCustomDice() {
@@ -20,14 +8,14 @@ function getCustomDice() {
 function getBarGrid() {
     const saved = game.user.getFlag("star-quick-dice", "barGrid");
     if (saved?.length) return saved;
-    return [[...BUILT_IN_DICE, ...getCustomDice()].map(d => d.formula)];
+    return [[...BUILT_IN_DICE, ...getCustomDice()]];
 }
 
 function getVisibility() {
     const saved = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const visibility = {};
-    for (const die of [...BUILT_IN_DICE, ...getCustomDice()]) {
-        visibility[die.formula] = saved[die.formula] !== false;
+    for (const formula of [...BUILT_IN_DICE, ...getCustomDice()]) {
+        visibility[formula] = saved[formula] !== false;
     }
     return visibility;
 }
@@ -82,7 +70,7 @@ function makeRollClickHandler(formula) {
 function renderBar(diceBar) {
     const grid = getBarGrid();
     const visibility = getVisibility();
-    const diceMap = new Map([...BUILT_IN_DICE, ...getCustomDice()].map(d => [d.formula, d]));
+    const knownDice = new Set([...BUILT_IN_DICE, ...getCustomDice()]);
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
     const multirow = grid.length > 1;
@@ -97,9 +85,8 @@ function renderBar(diceBar) {
     grid.forEach(row => {
         const rowEl = $('<div class="sqd-bar-row">');
         row.forEach(formula => {
-            const die = diceMap.get(formula);
-            if (!die) return;
-            const btn = $("<button>").attr("data-roll", formula).text(die.label);
+            if (!knownDice.has(formula)) return;
+            const btn = $("<button>").attr("data-roll", formula).text(formula);
             if (!visibility[formula]) btn.hide();
             btn.click(makeRollClickHandler(formula));
             rowEl.append(btn);
@@ -108,7 +95,7 @@ function renderBar(diceBar) {
     });
 }
 
-function renderLayoutEditor(html, pendingGrid, diceMap) {
+function renderLayoutEditor(html, pendingGrid) {
     const panel = html.find('[data-panel="layout"]');
     panel.empty();
 
@@ -135,11 +122,10 @@ function renderLayoutEditor(html, pendingGrid, diceMap) {
         for (let c = 0; c < numCols; c++) {
             const idx = r * numCols + c;
             if (idx < flat.length) {
-                const die = diceMap.get(flat[idx]);
                 rowEl.append(
                     $('<div class="sqd-layout-tile" draggable="true">')
                         .attr("data-index", idx)
-                        .text(die ? die.label : flat[idx])
+                        .text(flat[idx])
                 );
             } else {
                 rowEl.append($('<div class="sqd-layout-slot">').attr("data-index", idx));
@@ -154,23 +140,23 @@ async function openConfig(diceBar) {
     const savedVisibility = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const pendingCustom = [...getCustomDice()];
     const pendingGrid   = getBarGrid().map(row => [...row]);
-    const diceMap       = new Map([...BUILT_IN_DICE, ...pendingCustom].map(d => [d.formula, d]));
 
-    function makeRow(label, formula, isCustom) {
+    function makeRow(formula, isCustom) {
         const checked = savedVisibility[formula] !== false ? "checked" : "";
         const deleteBtn = isCustom
             ? `<button type="button" class="sqd-delete-btn">&#10005;</button>`
             : "";
         return `
             <tr data-formula="${formula}">
-                <td>${label}</td>
+                <td>${formula}</td>
                 <td class="sqd-checkbox-cell"><input type="checkbox" name="${formula}" ${checked}></td>
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
         `;
     }
 
-    const flatDice = pendingGrid.flat().map(f => diceMap.get(f)).filter(Boolean);
+    const allDice = new Set([...BUILT_IN_DICE, ...pendingCustom]);
+    const flatDice = pendingGrid.flat().filter(f => allDice.has(f));
 
     const content = `
         <div class="sqd-tabs">
@@ -184,8 +170,8 @@ async function openConfig(diceBar) {
                     <tr><th>Dice</th><th>Visible</th><th></th></tr>
                 </thead>
                 <tbody>
-                    ${flatDice.map(({ label, formula }) =>
-                        makeRow(label, formula, pendingCustom.some(d => d.formula === formula))
+                    ${flatDice.map(formula =>
+                        makeRow(formula, pendingCustom.includes(formula))
                     ).join("")}
                 </tbody>
             </table>
@@ -246,7 +232,7 @@ async function openConfig(diceBar) {
                 $(e.currentTarget).addClass("sqd-tab-active");
                 $html.find(".sqd-tab-panel").addClass("sqd-tab-panel-hidden");
                 $html.find(`[data-panel="${tab}"]`).removeClass("sqd-tab-panel-hidden");
-                if (tab === "layout") renderLayoutEditor($html, pendingGrid, diceMap);
+                if (tab === "layout") renderLayoutEditor($html, pendingGrid);
             });
 
             // ── Layout tab drag-and-drop ───────────────────────────────────
@@ -295,7 +281,7 @@ async function openConfig(diceBar) {
                     const row = flat.slice(r * numCols, (r + 1) * numCols);
                     if (row.length > 0) pendingGrid.push(row);
                 }
-                renderLayoutEditor($html, pendingGrid, diceMap);
+                renderLayoutEditor($html, pendingGrid);
             });
 
             $html.on("change", ".sqd-rows-input", (e) => {
@@ -310,7 +296,7 @@ async function openConfig(diceBar) {
                     const row = flat.slice(r * numCols, (r + 1) * numCols);
                     if (row.length > 0) pendingGrid.push(row);
                 }
-                renderLayoutEditor($html, pendingGrid, diceMap);
+                renderLayoutEditor($html, pendingGrid);
             });
 
             // ── Reset tab ─────────────────────────────────────────────────
@@ -326,10 +312,10 @@ async function openConfig(diceBar) {
 
                 // Reset in-memory state so the dialog reflects the change immediately
                 pendingCustom.splice(0);
-                pendingGrid.splice(0, pendingGrid.length, BUILT_IN_DICE.map(d => d.formula));
+                pendingGrid.splice(0, pendingGrid.length, [...BUILT_IN_DICE]);
 
                 if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
-                    renderLayoutEditor($html, pendingGrid, diceMap);
+                    renderLayoutEditor($html, pendingGrid);
                 }
 
                 renderBar(diceBar);
@@ -339,7 +325,7 @@ async function openConfig(diceBar) {
             $html.on("click", ".sqd-delete-btn", (e) => {
                 const row     = $(e.currentTarget).closest("tr");
                 const formula = row.data("formula");
-                pendingCustom.splice(pendingCustom.findIndex(d => d.formula === formula), 1);
+                pendingCustom.splice(pendingCustom.indexOf(formula), 1);
                 for (let r = 0; r < pendingGrid.length; r++) {
                     const idx = pendingGrid[r].indexOf(formula);
                     if (idx !== -1) {
@@ -360,18 +346,16 @@ async function openConfig(diceBar) {
                     ui.notifications.warn("Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105.");
                     return;
                 }
-                if ([...BUILT_IN_DICE, ...pendingCustom].some(d => d.formula === raw)) {
+                if ([...BUILT_IN_DICE, ...pendingCustom].includes(raw)) {
                     ui.notifications.warn(`Star Quick Dice: ${raw} already exists.`);
                     return;
                 }
 
-                const die = { label: formulaToLabel(raw), formula: raw };
-                pendingCustom.push(die);
-                diceMap.set(die.formula, die);
-                if (pendingGrid.length === 0) pendingGrid.push([die.formula]);
-                else pendingGrid[pendingGrid.length - 1].push(die.formula);
+                pendingCustom.push(raw);
+                if (pendingGrid.length === 0) pendingGrid.push([raw]);
+                else pendingGrid[pendingGrid.length - 1].push(raw);
 
-                $html.find("tbody").append(makeRow(die.label, die.formula, true));
+                $html.find("tbody").append(makeRow(raw, true));
                 input.val("").focus();
             });
 
