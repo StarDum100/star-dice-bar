@@ -1,11 +1,11 @@
 {
-  "id": "dice-roller",
-  "title": "Dice Roller",
+  "id": "star-quick-dice",
+  "title": "Star Quick Dice",
   "description": "Adds quick buttons for common dice rolls.",
   "version": "1.0.0",
   "authors": [
     {
-      "name": "Your Name"
+      "name": "StarDragon"
     }
   ],
   "compatibility": {

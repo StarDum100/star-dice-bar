@@ -1,5 +1,5 @@
 {
-  "name": "dice-roller",
+  "name": "star-quick-dice",
   "version": "1.0.0",
   "scripts": {
     "test": "jest"

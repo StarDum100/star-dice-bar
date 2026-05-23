@@ -1,4 +1,4 @@
-# Dice Roller
+# Star Quick Dice
 
 A FoundryVTT module that adds a quick-access dice bar to the top of the UI, letting you roll common dice (d4–d100) with a single click. Results are posted to chat with the current speaker.
 
@@ -36,7 +36,7 @@ npm install
 Symlink or copy the module folder into your Foundry data directory:
 
 ```
-<Foundry Data>/Data/modules/dice-roller/
+<Foundry Data>/Data/modules/star-quick-dice/
 ```
 
 Then launch Foundry, enable the module in your world, and open the browser console (`F12`) to watch for errors. Verify:

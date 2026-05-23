@@ -15,7 +15,7 @@ global.ChatMessage = {
 
 require("../scripts/main.js");
 
-describe("Dice Roller", () => {
+describe("Star Quick Dice", () => {
   describe("init hook", () => {
     it("registers an init hook", () => {
       expect(global.Hooks.once).toHaveBeenCalledWith(

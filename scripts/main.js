@@ -1,5 +1,5 @@
 Hooks.once("init", () => {
-    console.log("Dice Roll | Initialized");
+    console.log("Star Quick Dice | Initialized");
 });
 
 Hooks.once("ready", () => {
