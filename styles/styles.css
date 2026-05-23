@@ -228,7 +228,7 @@
 }
 
 .sqd-rows-label {
-    color: #000;
+    color: #ccc;
     font-size: 13px;
 }
 
@@ -243,7 +243,7 @@
 }
 
 .sqd-layout-hint {
-    color: #444;
+    color: #888;
     font-size: 11px;
     font-style: italic;
     margin: 6px 0 12px;
@@ -251,7 +251,7 @@
 }
 
 .sqd-layout-empty {
-    color: #444;
+    color: #888;
     font-style: italic;
     padding: 16px 0;
     text-align: center;
@@ -273,7 +273,7 @@
 }
 
 .sqd-reset-item p {
-    color: #444;
+    color: #888;
     font-size: 12px;
     margin: 3px 0 0;
 }
