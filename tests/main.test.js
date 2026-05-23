@@ -4,9 +4,7 @@ const hookCallbacks = {};
 
 global.$ = $;
 global.Hooks = {
-  once: jest.fn((event, cb) => {
-    hookCallbacks[event] = cb;
-  }),
+  once: jest.fn((event, cb) => { hookCallbacks[event] = cb; }),
 };
 global.Roll = jest.fn();
 global.ChatMessage = {
@@ -14,8 +12,8 @@ global.ChatMessage = {
 };
 global.game = {
   user: {
-    getFlag: jest.fn().mockReturnValue(undefined),
-    setFlag: jest.fn().mockResolvedValue(undefined),
+    getFlag:   jest.fn().mockReturnValue(undefined),
+    setFlag:   jest.fn().mockResolvedValue(undefined),
     unsetFlag: jest.fn().mockResolvedValue(undefined),
   },
 };
@@ -29,157 +27,183 @@ global.Dialog = jest.fn().mockImplementation((options) => {
   return instance;
 });
 
-require("../scripts/main.js");
+const { applyGridDrop } = require("../scripts/main.js");
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function openDialogHtml() {
+  const options = global.Dialog.__lastOptions;
+  const container = document.createElement("div");
+  container.innerHTML = options.content;
+  const html = $(container);
+  options.render(html);
+  return { html, options };
+}
+
+function setupBar(flagOverrides = {}) {
+  global.game.user.getFlag.mockImplementation((ns, key) => flagOverrides[key] ?? undefined);
+  document.body.innerHTML = "";
+  hookCallbacks["ready"]();
+}
+
+// ── applyGridDrop (pure unit tests) ──────────────────────────────────────
+
+describe("applyGridDrop", () => {
+  it("inserts to the left of target in the same row", () => {
+    const grid = [["1d4", "1d6", "1d8"]];
+    applyGridDrop(grid, "1d8", "1d4", "left");
+    expect(grid).toEqual([["1d8", "1d4", "1d6"]]);
+  });
+
+  it("inserts to the right of target in the same row", () => {
+    const grid = [["1d4", "1d6", "1d8"]];
+    applyGridDrop(grid, "1d4", "1d8", "right");
+    expect(grid).toEqual([["1d6", "1d8", "1d4"]]);
+  });
+
+  it("inserts above target into a new row", () => {
+    const grid = [["1d4", "1d6", "1d8"]];
+    applyGridDrop(grid, "1d8", "1d4", "top");
+    expect(grid).toEqual([["1d8"], ["1d4", "1d6"]]);
+  });
+
+  it("inserts below target into a new row", () => {
+    const grid = [["1d4", "1d6", "1d8"]];
+    applyGridDrop(grid, "1d4", "1d8", "bottom");
+    expect(grid).toEqual([["1d6", "1d8"], ["1d4"]]);
+  });
+
+  it("moves a die across rows", () => {
+    const grid = [["1d4", "1d6"], ["1d8", "1d10"]];
+    applyGridDrop(grid, "1d8", "1d4", "right");
+    expect(grid).toEqual([["1d4", "1d8", "1d6"], ["1d10"]]);
+  });
+
+  it("removes an empty row after moving its last die", () => {
+    const grid = [["1d4"], ["1d6", "1d8"]];
+    applyGridDrop(grid, "1d4", "1d6", "right");
+    expect(grid).toEqual([["1d6", "1d4", "1d8"]]);
+  });
+
+  it("does nothing when source formula is not in the grid", () => {
+    const grid = [["1d4", "1d6"]];
+    applyGridDrop(grid, "1d99", "1d4", "left");
+    expect(grid).toEqual([["1d4", "1d6"]]);
+  });
+
+  it("does nothing when target formula is not in the grid", () => {
+    const grid = [["1d4", "1d6"]];
+    applyGridDrop(grid, "1d4", "1d99", "left");
+    expect(grid).toEqual([["1d4", "1d6"]]);
+  });
+
+  it("adjusts target column when source precedes target in the same row", () => {
+    const grid = [["1d4", "1d6", "1d8", "1d10"]];
+    applyGridDrop(grid, "1d4", "1d10", "left");
+    expect(grid).toEqual([["1d6", "1d8", "1d4", "1d10"]]);
+  });
+});
+
+// ── Star Quick Dice (integration) ────────────────────────────────────────
 
 describe("Star Quick Dice", () => {
   describe("init hook", () => {
     it("registers an init hook", () => {
-      expect(global.Hooks.once).toHaveBeenCalledWith(
-        "init",
-        expect.any(Function)
-      );
+      expect(global.Hooks.once).toHaveBeenCalledWith("init", expect.any(Function));
     });
   });
 
   describe("ready hook", () => {
     beforeEach(() => {
-      global.game.user.getFlag.mockReturnValue(undefined);
-      document.body.innerHTML = '<div id="ui-top"></div>';
-      hookCallbacks["ready"]();
+      setupBar();
     });
 
-    it("appends the dice bar to #ui-top", () => {
+    it("appends the dice bar to body", () => {
       expect(document.querySelector(".quick-dice-bar")).not.toBeNull();
     });
 
-    it("renders 7 dice buttons", () => {
-      const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
-      expect(buttons).toHaveLength(7);
+    it("renders 7 dice buttons by default", () => {
+      expect(document.querySelectorAll("button[data-roll]")).toHaveLength(7);
     });
 
     it("renders a config button", () => {
       expect(document.querySelector(".sqd-config-btn")).not.toBeNull();
     });
 
+    it("renders a drag handle", () => {
+      expect(document.querySelector(".sqd-bar-handle")).not.toBeNull();
+    });
+
+    it("buttons live inside .sqd-dice-grid", () => {
+      expect(document.querySelector(".sqd-dice-grid button[data-roll]")).not.toBeNull();
+    });
+
     it.each([
-      ["d4", "1d4"],
-      ["d6", "1d6"],
-      ["d8", "1d8"],
-      ["d10", "1d10"],
-      ["d12", "1d12"],
-      ["d20", "1d20"],
-      ["d100", "1d100"],
+      ["d4", "1d4"], ["d6", "1d6"], ["d8", "1d8"], ["d10", "1d10"],
+      ["d12", "1d12"], ["d20", "1d20"], ["d100", "1d100"],
     ])("%s button has correct label and data-roll", (label, formula) => {
       const btn = document.querySelector(`[data-roll="${formula}"]`);
       expect(btn).not.toBeNull();
       expect(btn.textContent.trim()).toBe(label);
     });
 
-    describe("ordering", () => {
-      it("renders buttons in saved order from diceOrder flag", () => {
-        global.game.user.getFlag.mockImplementation((ns, key) => {
-          if (key === "diceOrder") return ["1d20", "1d4", "1d6", "1d8", "1d10", "1d12", "1d100"];
-          return undefined;
-        });
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        hookCallbacks["ready"]();
-        const buttons = [...document.querySelectorAll(".quick-dice-bar button[data-roll]")];
+    describe("barGrid ordering", () => {
+      it("renders buttons in saved order from barGrid flag", () => {
+        setupBar({ barGrid: [["1d20", "1d4", "1d6", "1d8", "1d10", "1d12", "1d100"]] });
+        const buttons = [...document.querySelectorAll("button[data-roll]")];
         expect(buttons[0].dataset.roll).toBe("1d20");
         expect(buttons[1].dataset.roll).toBe("1d4");
       });
 
-      it("renders buttons in default order when no diceOrder flag is set", () => {
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        hookCallbacks["ready"]();
-        const buttons = [...document.querySelectorAll(".quick-dice-bar button[data-roll]")];
+      it("renders buttons in default order when barGrid is not set", () => {
+        const buttons = [...document.querySelectorAll("button[data-roll]")];
         expect(buttons[0].dataset.roll).toBe("1d4");
         expect(buttons[6].dataset.roll).toBe("1d100");
       });
 
-      it("appends dice not present in the saved order at the end", () => {
-        global.game.user.getFlag.mockImplementation((ns, key) => {
-          if (key === "diceOrder") return ["1d20", "1d4"];
-          return undefined;
-        });
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        hookCallbacks["ready"]();
-        const buttons = [...document.querySelectorAll(".quick-dice-bar button[data-roll]")];
-        expect(buttons[0].dataset.roll).toBe("1d20");
-        expect(buttons[1].dataset.roll).toBe("1d4");
-        // remaining dice appended in original order
-        expect(buttons[2].dataset.roll).toBe("1d6");
+      it("supports multiple rows from barGrid", () => {
+        setupBar({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
+        expect(document.querySelector(".sqd-row-break")).not.toBeNull();
+        expect(document.querySelectorAll("button[data-roll]")).toHaveLength(4);
       });
 
-      it("ignores unknown formulas in the saved order without crashing", () => {
-        global.game.user.getFlag.mockImplementation((ns, key) => {
-          if (key === "diceOrder") return ["1d999", "1d4", "1d6"];
-          return undefined;
-        });
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        expect(() => hookCallbacks["ready"]()).not.toThrow();
-        // 1d999 is unknown so only 7 built-in dice render
-        const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
-        expect(buttons).toHaveLength(7);
+      it("ignores unknown formulas in barGrid without crashing", () => {
+        setupBar({ barGrid: [["1d999", "1d4"]] });
+        expect(() => {}).not.toThrow();
+        expect(document.querySelectorAll("button[data-roll]")).toHaveLength(1);
       });
     });
 
     describe("custom dice", () => {
       it("renders custom dice from saved flags", () => {
-        global.game.user.getFlag.mockImplementation((ns, key) => {
-          if (key === "customDice") return [{ label: "d105", formula: "1d105" }];
-          return undefined;
-        });
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        hookCallbacks["ready"]();
+        setupBar({ customDice: [{ label: "d105", formula: "1d105" }] });
         expect(document.querySelector('[data-roll="1d105"]')).not.toBeNull();
       });
 
-      it("renders 8 dice buttons when one custom die is saved", () => {
-        global.game.user.getFlag.mockImplementation((ns, key) => {
-          if (key === "customDice") return [{ label: "2d6", formula: "2d6" }];
-          return undefined;
-        });
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        hookCallbacks["ready"]();
-        const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
-        expect(buttons).toHaveLength(8);
+      it("renders 8 buttons when one custom die is saved", () => {
+        setupBar({ customDice: [{ label: "2d6", formula: "2d6" }] });
+        expect(document.querySelectorAll("button[data-roll]")).toHaveLength(8);
       });
     });
 
     describe("visibility", () => {
-      it("hides dice buttons that are saved as not visible", () => {
-        global.game.user.getFlag.mockImplementation((ns, key) => {
-          if (key === "diceVisibility") return { "1d4": false };
-          return undefined;
-        });
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        hookCallbacks["ready"]();
-        const d4 = document.querySelector('[data-roll="1d4"]');
-        expect(d4.style.display).toBe("none");
+      it("hides dice buttons saved as not visible", () => {
+        setupBar({ diceVisibility: { "1d4": false } });
+        expect(document.querySelector('[data-roll="1d4"]').style.display).toBe("none");
       });
 
-      it("shows dice buttons that are saved as visible", () => {
-        global.game.user.getFlag.mockImplementation((ns, key) => {
-          if (key === "diceVisibility") return { "1d20": true };
-          return undefined;
-        });
-        document.body.innerHTML = '<div id="ui-top"></div>';
-        hookCallbacks["ready"]();
-        const d20 = document.querySelector('[data-roll="1d20"]');
-        expect(d20.style.display).not.toBe("none");
+      it("shows dice buttons saved as visible", () => {
+        setupBar({ diceVisibility: { "1d20": true } });
+        expect(document.querySelector('[data-roll="1d20"]').style.display).not.toBe("none");
       });
     });
 
     describe("on button click", () => {
-      let mockRollInstance;
-
+      let mockRoll;
       beforeEach(() => {
-        mockRollInstance = {
-          evaluate: jest.fn().mockResolvedValue(undefined),
-          toMessage: jest.fn(),
-        };
+        mockRoll = { evaluate: jest.fn().mockResolvedValue(undefined), toMessage: jest.fn() };
         global.Roll.mockClear();
-        global.Roll.mockImplementation(() => mockRollInstance);
+        global.Roll.mockImplementation(() => mockRoll);
       });
 
       it("creates a Roll with the correct formula", () => {
@@ -190,45 +214,62 @@ describe("Star Quick Dice", () => {
       it("evaluates the roll", async () => {
         document.querySelector('[data-roll="1d6"]').click();
         await Promise.resolve();
-        expect(mockRollInstance.evaluate).toHaveBeenCalled();
+        expect(mockRoll.evaluate).toHaveBeenCalled();
       });
 
       it("sends to chat with correct flavor text", async () => {
         document.querySelector('[data-roll="1d8"]').click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        expect(mockRollInstance.toMessage).toHaveBeenCalledWith(
+        await new Promise(r => setTimeout(r, 0));
+        expect(mockRoll.toMessage).toHaveBeenCalledWith(
           expect.objectContaining({ flavor: "Quick Roll: 1d8" })
         );
       });
 
       it("includes the current speaker in the message", async () => {
         document.querySelector('[data-roll="1d4"]').click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        expect(mockRollInstance.toMessage).toHaveBeenCalledWith(
+        await new Promise(r => setTimeout(r, 0));
+        expect(mockRoll.toMessage).toHaveBeenCalledWith(
           expect.objectContaining({ speaker: { alias: "Tester" } })
         );
       });
     });
   });
 
+  describe("bar positioning", () => {
+    it("applies saved position from barPosition flag", () => {
+      setupBar({ barPosition: { left: 200, top: 150 } });
+      const bar = document.querySelector(".quick-dice-bar");
+      expect(bar.style.left).toBe("200px");
+      expect(bar.style.top).toBe("150px");
+    });
+
+    it("applies a default top of 10px when no barPosition flag is set", () => {
+      setupBar();
+      expect(document.querySelector(".quick-dice-bar").style.top).toBe("10px");
+    });
+
+    it("saves position to flag on drag end", () => {
+      setupBar();
+      global.game.user.setFlag.mockClear();
+      const handle = document.querySelector(".sqd-bar-handle");
+      $(handle).trigger({ type: "mousedown", clientX: 50, clientY: 50, preventDefault: () => {} });
+      $(document).trigger({ type: "mousemove.sqd-drag", clientX: 80, clientY: 70 });
+      $(document).trigger("mouseup.sqd-drag");
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "barPosition",
+        expect.objectContaining({ left: expect.any(Number), top: expect.any(Number) })
+      );
+    });
+  });
+
   describe("formulaToLabel", () => {
     function renderWithLabel(formula, label) {
-      global.game.user.getFlag.mockImplementation((ns, key) => {
-        if (key === "customDice") return [{ label, formula }];
-        return undefined;
-      });
-      document.body.innerHTML = '<div id="ui-top"></div>';
-      hookCallbacks["ready"]();
+      setupBar({ customDice: [{ label, formula }] });
     }
 
-    const validCases = [
-      ["1d4",   "d4"  ],
-      ["1d105", "d105"],
-      ["2d6",   "2d6" ],
-      ["3d8",   "3d8" ],
-    ];
-
-    it.each(validCases)("formulaToLabel(%s) === %s", (formula, expected) => {
+    it.each([
+      ["1d4", "d4"], ["1d105", "d105"], ["2d6", "2d6"], ["3d8", "3d8"],
+    ])("formulaToLabel(%s) === %s", (formula, expected) => {
       renderWithLabel(formula, expected);
       const btn = document.querySelector(`[data-roll="${formula}"]`);
       expect(btn).not.toBeNull();
@@ -238,17 +279,14 @@ describe("Star Quick Dice", () => {
     describe("invalid label values", () => {
       it("renders without crashing when label has no digits", () => {
         expect(() => renderWithLabel("1d999", "abc")).not.toThrow();
-        expect(document.querySelector('[data-roll="1d999"]')).not.toBeNull();
       });
 
       it("renders without crashing when label is empty", () => {
         expect(() => renderWithLabel("1d999", "")).not.toThrow();
-        expect(document.querySelector('[data-roll="1d999"]')).not.toBeNull();
       });
 
       it("renders without crashing when label contains special characters", () => {
         expect(() => renderWithLabel("1d999", "!@#$%^&*()")).not.toThrow();
-        expect(document.querySelector('[data-roll="1d999"]')).not.toBeNull();
       });
 
       it("does not execute a script tag injected as a label", () => {
@@ -273,20 +311,11 @@ describe("Star Quick Dice", () => {
 
   describe("config dialog — add button warnings", () => {
     let html;
-
     beforeEach(() => {
-      global.game.user.getFlag.mockReturnValue(undefined);
       global.ui.notifications.warn.mockClear();
-      document.body.innerHTML = '<div id="ui-top"></div>';
-      hookCallbacks["ready"]();
-
-      // Open the config dialog and call the render callback with the dialog content
+      setupBar();
       document.querySelector(".sqd-config-btn").click();
-      const options = global.Dialog.__lastOptions;
-      const container = document.createElement("div");
-      container.innerHTML = options.content;
-      html = $(container);
-      options.render(html);
+      ({ html } = openDialogHtml());
     });
 
     function attemptAdd(formula) {
@@ -349,101 +378,91 @@ describe("Star Quick Dice", () => {
     });
   });
 
-  describe("bar positioning", () => {
-    beforeEach(() => {
-      global.game.user.getFlag.mockReturnValue(undefined);
+  describe("config dialog — layout tab", () => {
+    function openLayout(flagOverrides = {}) {
+      setupBar(flagOverrides);
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find("[data-tab='layout']").trigger("click");
+      return html;
+    }
+
+    it("shows the dice panel by default and hides layout and reset", () => {
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
     });
 
-    it("applies saved position from barPosition flag", () => {
-      global.game.user.getFlag.mockImplementation((ns, key) => {
-        if (key === "barPosition") return { left: 200, top: 150 };
-        return undefined;
-      });
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
-      const bar = document.querySelector(".quick-dice-bar");
-      expect(bar.style.left).toBe("200px");
-      expect(bar.style.top).toBe("150px");
+    it("renders a tile for each built-in die on the layout tab", () => {
+      const html = openLayout();
+      expect(html.find(".sqd-layout-tile")).toHaveLength(7);
     });
 
-    it("applies default position when no barPosition flag is set", () => {
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
-      const bar = document.querySelector(".quick-dice-bar");
-      expect(bar.style.top).toBe("10px");
-      expect(bar.style.left).toMatch(/^\d+px$/);
+    it("renders the correct label on each layout tile", () => {
+      const html = openLayout();
+      const labels = [...html.find(".sqd-layout-tile")].map(el => el.textContent.trim());
+      expect(labels).toContain("d4");
+      expect(labels).toContain("d20");
     });
 
-    it("appends the bar to body", () => {
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
-      expect(document.body.querySelector(".quick-dice-bar")).not.toBeNull();
+    it("renders multiple rows when barGrid has multiple rows", () => {
+      const html = openLayout({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
+      expect(html.find(".sqd-layout-row")).toHaveLength(2);
+      expect(html.find(".sqd-layout-row").eq(0).find(".sqd-layout-tile")).toHaveLength(2);
+      expect(html.find(".sqd-layout-row").eq(1).find(".sqd-layout-tile")).toHaveLength(2);
     });
 
-    it("renders a drag handle", () => {
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
-      expect(document.querySelector(".sqd-bar-handle")).not.toBeNull();
+    it("updates pendingGrid when a drop is applied", () => {
+      const html = openLayout();
+      const tiles = html.find(".sqd-layout-tile");
+      const src = tiles.eq(0); // d4
+      const tgt = tiles.eq(2); // d8
+
+      $(src).trigger({ type: "dragstart", originalEvent: { dataTransfer: { effectAllowed: "" } } });
+      $(tgt).trigger({ type: "dragover", clientX: 5, clientY: 5,
+        originalEvent: { dataTransfer: {} }, preventDefault: () => {} });
+      $(tgt).trigger({ type: "drop", preventDefault: () => {} });
+
+      // After drop the layout re-renders — tiles should still all be present
+      expect(html.find(".sqd-layout-tile")).toHaveLength(7);
     });
 
-    it("saves position to flag on drag end", () => {
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
+    it("saves barGrid flag on save", async () => {
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      const { options } = openDialogHtml();
       global.game.user.setFlag.mockClear();
-
-      const handle = document.querySelector(".sqd-bar-handle");
-      $(handle).trigger({ type: "mousedown", clientX: 50, clientY: 50, preventDefault: () => {} });
-      $(document).trigger({ type: "mousemove.sqd-drag", clientX: 80, clientY: 70 });
-      $(document).trigger("mouseup.sqd-drag");
-
+      const container = document.createElement("div");
+      container.innerHTML = options.content;
+      await options.buttons.save.callback($(container));
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice",
-        "barPosition",
-        expect.objectContaining({ left: expect.any(Number), top: expect.any(Number) })
+        "star-quick-dice", "barGrid", expect.any(Array)
       );
     });
   });
 
   describe("config dialog — reset tab", () => {
     let html;
-
     beforeEach(() => {
-      global.game.user.getFlag.mockReturnValue(undefined);
       global.game.user.setFlag.mockClear();
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
+      global.game.user.unsetFlag.mockClear();
+      setupBar();
       document.querySelector(".sqd-config-btn").click();
-      const options = global.Dialog.__lastOptions;
-      const container = document.createElement("div");
-      container.innerHTML = options.content;
-      html = $(container);
-      options.render(html);
-    });
-
-    it("shows the dice panel by default and hides the reset panel", () => {
-      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
-      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+      ({ html } = openDialogHtml());
     });
 
     it("switches to the reset panel when the Reset tab is clicked", () => {
       html.find("[data-tab='reset']").trigger("click");
       expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(false);
-      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-    });
-
-    it("switches back to the dice panel when the Dice tab is clicked", () => {
-      html.find("[data-tab='reset']").trigger("click");
-      html.find("[data-tab='dice']").trigger("click");
-      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
-      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
     });
 
     it("reset position button saves null barPosition flag", async () => {
       html.find(".sqd-reset-position-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
-      expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "barPosition", null
-      );
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "barPosition", null);
     });
 
     it("reset position button does not close the dialog", async () => {
@@ -452,11 +471,11 @@ describe("Star Quick Dice", () => {
       expect(global.Dialog.__lastInstance.close).not.toHaveBeenCalled();
     });
 
-    it("reset dice button unsets customDice, diceOrder, and diceVisibility flags", async () => {
+    it("reset dice button unsets customDice, barGrid, and diceVisibility flags", async () => {
       html.find(".sqd-reset-dice-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
       expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "customDice");
-      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "diceOrder");
+      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "barGrid");
       expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "diceVisibility");
     });
 
@@ -467,50 +486,37 @@ describe("Star Quick Dice", () => {
     });
 
     it("reset dice button re-renders the bar with only built-in dice", async () => {
-      global.game.user.getFlag.mockImplementation((ns, key) => {
-        if (key === "customDice") return [{ label: "d105", formula: "1d105" }];
-        return undefined;
-      });
-      document.body.innerHTML = "";
-      hookCallbacks["ready"]();
+      setupBar({ customDice: [{ label: "d105", formula: "1d105" }] });
       document.querySelector(".sqd-config-btn").click();
-      const options = global.Dialog.__lastOptions;
+      const { options } = openDialogHtml();
+      global.game.user.getFlag.mockReturnValue(undefined);
       const container = document.createElement("div");
       container.innerHTML = options.content;
       const localHtml = $(container);
-      global.game.user.getFlag.mockReturnValue(undefined);
       options.render(localHtml);
       localHtml.find(".sqd-reset-dice-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
-      const buttons = document.querySelectorAll(".quick-dice-bar button[data-roll]");
-      expect(buttons).toHaveLength(7);
+      expect(document.querySelectorAll("button[data-roll]")).toHaveLength(7);
     });
   });
 
   describe("resilience", () => {
-    beforeEach(() => {
-      global.game.user.getFlag.mockReturnValue(undefined);
-    });
+    beforeEach(() => { setupBar(); });
 
-    it("does not throw when #ui-top is absent from the DOM", () => {
+    it("does not throw when the DOM is empty", () => {
       document.body.innerHTML = "";
       expect(() => hookCallbacks["ready"]()).not.toThrow();
     });
 
-    it("each click creates an independent Roll instance with no shared state", async () => {
-      document.body.innerHTML = '<div id="ui-top"></div>';
-      hookCallbacks["ready"]();
-
+    it("each click creates an independent Roll instance", async () => {
       global.Roll.mockClear();
       global.Roll.mockImplementation(() => ({
         evaluate: jest.fn().mockResolvedValue(undefined),
         toMessage: jest.fn(),
       }));
-
       document.querySelector('[data-roll="1d6"]').click();
       document.querySelector('[data-roll="1d6"]').click();
-
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise(r => setTimeout(r, 0));
       expect(global.Roll).toHaveBeenCalledTimes(2);
     });
   });

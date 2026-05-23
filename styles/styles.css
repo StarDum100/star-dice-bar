@@ -1,30 +1,28 @@
+/* ── Bar ─────────────────────────────────────────────────────────────────── */
+
 .quick-dice-bar {
     position: fixed;
     z-index: 70;
     display: flex;
+    flex-direction: row;
     gap: 4px;
     padding: 4px;
     background: rgba(0,0,0,0.5);
     border-radius: 6px;
     pointer-events: all;
+    align-items: flex-start;
+}
+
+.sqd-dice-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
     align-items: center;
 }
 
-.sqd-bar-handle {
-    color: #777;
-    cursor: grab;
-    font-size: 18px;
-    padding: 0 2px;
-    user-select: none;
-    line-height: 1;
-}
-
-.sqd-bar-handle:hover {
-    color: #aaa;
-}
-
-.sqd-bar-handle:active {
-    cursor: grabbing;
+.sqd-row-break {
+    flex-basis: 100%;
+    height: 0;
 }
 
 .quick-dice-bar button {
@@ -40,14 +38,27 @@
     background: #444;
 }
 
+.sqd-bar-handle {
+    color: #777;
+    cursor: grab;
+    font-size: 18px;
+    padding: 0 2px;
+    user-select: none;
+    line-height: 1;
+    margin-top: 3px;
+}
+
+.sqd-bar-handle:hover  { color: #aaa; }
+.sqd-bar-handle:active { cursor: grabbing; }
+
 .sqd-config-btn {
     opacity: 0.6;
     font-size: 14px;
 }
 
-.sqd-config-btn:hover {
-    opacity: 1;
-}
+.sqd-config-btn:hover { opacity: 1; }
+
+/* ── Config dialog tabs ──────────────────────────────────────────────────── */
 
 .sqd-tabs {
     display: flex;
@@ -73,9 +84,112 @@
     border-bottom: 1px solid #2c2c2c;
 }
 
-.sqd-tab-panel-hidden {
-    display: none;
+.sqd-tab-panel-hidden { display: none; }
+
+/* ── Dice tab ────────────────────────────────────────────────────────────── */
+
+.sqd-config-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
 }
+
+.sqd-config-table th,
+.sqd-config-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #444;
+}
+
+.sqd-checkbox-cell { text-align: center; }
+
+.sqd-delete-cell {
+    text-align: center;
+    width: 32px;
+}
+
+.sqd-delete-btn {
+    background: none;
+    border: none;
+    color: #c44;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    line-height: 1;
+}
+
+.sqd-delete-btn:hover { color: #f66; }
+
+.sqd-add-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.sqd-formula-input {
+    flex: 3;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: white;
+    padding: 4px 8px;
+}
+
+.sqd-add-btn {
+    flex: 1;
+    background: #2c2c2c;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    padding: 4px 10px;
+}
+
+.sqd-add-btn:hover { background: #444; }
+
+/* ── Layout tab ──────────────────────────────────────────────────────────── */
+
+.sqd-layout-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 0;
+}
+
+.sqd-layout-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.sqd-layout-tile {
+    background: #2c2c2c;
+    border: 2px solid #555;
+    border-radius: 4px;
+    color: white;
+    cursor: grab;
+    min-width: 40px;
+    padding: 6px 10px;
+    text-align: center;
+    user-select: none;
+}
+
+.sqd-layout-tile:active  { cursor: grabbing; }
+.sqd-layout-tile.sqd-dragging { opacity: 0.4; }
+
+.sqd-layout-tile.sqd-drop-left   { border-left:   3px solid #8af; }
+.sqd-layout-tile.sqd-drop-right  { border-right:  3px solid #8af; }
+.sqd-layout-tile.sqd-drop-top    { border-top:    3px solid #8af; }
+.sqd-layout-tile.sqd-drop-bottom { border-bottom: 3px solid #8af; }
+
+.sqd-layout-empty {
+    color: #777;
+    font-style: italic;
+    padding: 16px 0;
+    text-align: center;
+}
+
+/* ── Reset tab ───────────────────────────────────────────────────────────── */
 
 .sqd-reset-panel {
     display: flex;
@@ -110,92 +224,4 @@
 }
 
 .sqd-reset-position-btn:hover,
-.sqd-reset-dice-btn:hover {
-    background: #444;
-}
-
-.sqd-config-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 4px;
-}
-
-.sqd-config-table th,
-.sqd-config-table td {
-    padding: 6px 10px;
-    border-bottom: 1px solid #444;
-}
-
-.sqd-checkbox-cell {
-    text-align: center;
-}
-
-.sqd-drag-handle {
-    color: #777;
-    cursor: grab;
-    font-size: 16px;
-    text-align: center;
-    width: 20px;
-    user-select: none;
-}
-
-.sqd-drag-handle:active {
-    cursor: grabbing;
-}
-
-.sqd-dragging {
-    opacity: 0.4;
-}
-
-.sqd-drag-over {
-    outline: 2px solid #888;
-}
-
-.sqd-delete-cell {
-    text-align: center;
-    width: 32px;
-}
-
-.sqd-delete-btn {
-    background: none;
-    border: none;
-    color: #c44;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 2px 4px;
-    line-height: 1;
-}
-
-.sqd-delete-btn:hover {
-    color: #f66;
-}
-
-.sqd-add-row {
-    display: flex;
-    gap: 6px;
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-.sqd-formula-input {
-    flex: 3;
-    background: #1a1a1a;
-    border: 1px solid #555;
-    border-radius: 4px;
-    color: white;
-    padding: 4px 8px;
-}
-
-.sqd-add-btn {
-    flex: 1;
-    background: #2c2c2c;
-    border: 1px solid #555;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    padding: 4px 10px;
-}
-
-.sqd-add-btn:hover {
-    background: #444;
-}
+.sqd-reset-dice-btn:hover { background: #444; }

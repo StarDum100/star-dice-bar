@@ -12,36 +12,53 @@ function formulaToLabel(formula) {
     return formula.replace(/^1d/, "d");
 }
 
+function applyGridDrop(grid, srcFormula, tgtFormula, zone) {
+    let srcRow = -1, srcCol = -1, tgtRow = -1, tgtCol = -1;
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+            if (grid[r][c] === srcFormula) { srcRow = r; srcCol = c; }
+            if (grid[r][c] === tgtFormula) { tgtRow = r; tgtCol = c; }
+        }
+    }
+    if (srcRow === -1 || tgtRow === -1) return;
+
+    grid[srcRow].splice(srcCol, 1);
+
+    if (srcRow === tgtRow && srcCol < tgtCol) tgtCol--;
+
+    if (grid[srcRow].length === 0) {
+        grid.splice(srcRow, 1);
+        if (tgtRow > srcRow) tgtRow--;
+    }
+
+    if (zone === "left")        grid[tgtRow].splice(tgtCol,     0, srcFormula);
+    else if (zone === "right")  grid[tgtRow].splice(tgtCol + 1, 0, srcFormula);
+    else if (zone === "top")    grid.splice(tgtRow,     0, [srcFormula]);
+    else if (zone === "bottom") grid.splice(tgtRow + 1, 0, [srcFormula]);
+}
+
 function getCustomDice() {
     return game.user.getFlag("star-quick-dice", "customDice") ?? [];
 }
 
-function getDiceOrder() {
-    return game.user.getFlag("star-quick-dice", "diceOrder") ?? [];
-}
-
-function getOrderedDice() {
-    const allDice = [...BUILT_IN_DICE, ...getCustomDice()];
-    const order = getDiceOrder();
-    if (!order.length) return allDice;
-    const diceMap = new Map(allDice.map(d => [d.formula, d]));
-    const ordered = order.map(f => diceMap.get(f)).filter(Boolean);
-    const orderedSet = new Set(order);
-    return [...ordered, ...allDice.filter(d => !orderedSet.has(d.formula))];
+function getBarGrid() {
+    const saved = game.user.getFlag("star-quick-dice", "barGrid");
+    if (saved?.length) return saved;
+    return [[...BUILT_IN_DICE, ...getCustomDice()].map(d => d.formula)];
 }
 
 function getVisibility() {
     const saved = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const visibility = {};
-    for (const die of getOrderedDice()) {
+    for (const die of [...BUILT_IN_DICE, ...getCustomDice()]) {
         visibility[die.formula] = saved[die.formula] !== false;
     }
     return visibility;
 }
 
 function applyBarPosition(diceBar) {
-    const saved = game.user.getFlag("star-quick-dice", "barPosition");
-    const pos = saved ?? {
+    const savedPos = game.user.getFlag("star-quick-dice", "barPosition");
+    const pos = savedPos ?? {
         left: Math.round((window.innerWidth - diceBar.outerWidth()) / 2),
         top: 10,
     };
@@ -52,7 +69,6 @@ function applyBarPosition(diceBar) {
 
 function initBarDrag(diceBar) {
     let startX, startY, startLeft, startTop;
-
     diceBar.find(".sqd-bar-handle").on("mousedown", (e) => {
         e.preventDefault();
         startX    = e.clientX;
@@ -76,32 +92,67 @@ function initBarDrag(diceBar) {
     });
 }
 
-function renderBar(diceBar) {
-    const ordered = getOrderedDice();
-    const visibility = getVisibility();
-
-    diceBar.find("button[data-roll]").remove();
-
-    const buttons = ordered.map(({ label, formula }) => {
-        const btn = $("<button>").attr("data-roll", formula).text(label);
-        if (!visibility[formula]) btn.hide();
-        btn.click(async () => {
-            const roll = new Roll(formula);
-            await roll.evaluate();
-            roll.toMessage({
-                speaker: ChatMessage.getSpeaker(),
-                flavor: `Quick Roll: ${formula}`
-            });
+function makeRollClickHandler(formula) {
+    return async () => {
+        const roll = new Roll(formula);
+        await roll.evaluate();
+        roll.toMessage({
+            speaker: ChatMessage.getSpeaker(),
+            flavor: `Quick Roll: ${formula}`,
         });
-        return btn;
-    });
+    };
+}
 
-    diceBar.find(".sqd-config-btn").before(buttons);
+function renderBar(diceBar) {
+    const grid = getBarGrid();
+    const visibility = getVisibility();
+    const diceMap = new Map([...BUILT_IN_DICE, ...getCustomDice()].map(d => [d.formula, d]));
+    const gridEl = diceBar.find(".sqd-dice-grid");
+    gridEl.empty();
+
+    grid.forEach((row, rowIdx) => {
+        if (rowIdx > 0) gridEl.append($('<span class="sqd-row-break">'));
+        row.forEach(formula => {
+            const die = diceMap.get(formula);
+            if (!die) return;
+            const btn = $("<button>").attr("data-roll", formula).text(die.label);
+            if (!visibility[formula]) btn.hide();
+            btn.click(makeRollClickHandler(formula));
+            gridEl.append(btn);
+        });
+    });
+}
+
+function renderLayoutEditor(html, pendingGrid, diceMap) {
+    const panel = html.find('[data-panel="layout"]');
+    panel.empty();
+
+    if (pendingGrid.length === 0 || pendingGrid.every(r => r.length === 0)) {
+        panel.append('<p class="sqd-layout-empty">No dice configured. Add dice on the Dice tab.</p>');
+        return;
+    }
+
+    const editor = $('<div class="sqd-layout-editor">');
+    pendingGrid.forEach(row => {
+        const rowEl = $('<div class="sqd-layout-row">');
+        row.forEach(formula => {
+            const die = diceMap.get(formula);
+            rowEl.append(
+                $('<div class="sqd-layout-tile" draggable="true">')
+                    .attr("data-formula", formula)
+                    .text(die ? die.label : formula)
+            );
+        });
+        editor.append(rowEl);
+    });
+    panel.append(editor);
 }
 
 function openConfig(diceBar) {
     const savedVisibility = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
     const pendingCustom = [...getCustomDice()];
+    const pendingGrid   = getBarGrid().map(row => [...row]);
+    const diceMap       = new Map([...BUILT_IN_DICE, ...pendingCustom].map(d => [d.formula, d]));
 
     function makeRow(label, formula, isCustom) {
         const checked = savedVisibility[formula] !== false ? "checked" : "";
@@ -110,7 +161,6 @@ function openConfig(diceBar) {
             : "";
         return `
             <tr data-formula="${formula}">
-                <td class="sqd-drag-handle" title="Drag to reorder">&#8285;</td>
                 <td>${label}</td>
                 <td>${formula}</td>
                 <td class="sqd-checkbox-cell"><input type="checkbox" name="${formula}" ${checked}></td>
@@ -119,18 +169,21 @@ function openConfig(diceBar) {
         `;
     }
 
+    const flatDice = pendingGrid.flat().map(f => diceMap.get(f)).filter(Boolean);
+
     const content = `
         <div class="sqd-tabs">
             <button type="button" class="sqd-tab sqd-tab-active" data-tab="dice">Dice</button>
+            <button type="button" class="sqd-tab" data-tab="layout">Layout</button>
             <button type="button" class="sqd-tab" data-tab="reset">Reset</button>
         </div>
         <div class="sqd-tab-panel" data-panel="dice">
             <table class="sqd-config-table">
                 <thead>
-                    <tr><th></th><th>Die</th><th>Formula</th><th>Visible</th><th></th></tr>
+                    <tr><th>Die</th><th>Formula</th><th>Visible</th><th></th></tr>
                 </thead>
                 <tbody>
-                    ${getOrderedDice().map(({ label, formula }) =>
+                    ${flatDice.map(({ label, formula }) =>
                         makeRow(label, formula, pendingCustom.some(d => d.formula === formula))
                     ).join("")}
                 </tbody>
@@ -140,6 +193,7 @@ function openConfig(diceBar) {
                 <button type="button" class="sqd-add-btn">Add</button>
             </div>
         </div>
+        <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="layout"></div>
         <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="reset">
             <div class="sqd-reset-panel">
                 <div class="sqd-reset-item">
@@ -171,12 +225,9 @@ function openConfig(diceBar) {
                     html.find("input[type=checkbox]").each(function () {
                         newVisibility[this.name] = this.checked;
                     });
-                    const newOrder = html.find("tbody tr").map(function () {
-                        return $(this).data("formula");
-                    }).get();
                     await game.user.setFlag("star-quick-dice", "diceVisibility", newVisibility);
                     await game.user.setFlag("star-quick-dice", "customDice", pendingCustom);
-                    await game.user.setFlag("star-quick-dice", "diceOrder", newOrder);
+                    await game.user.setFlag("star-quick-dice", "barGrid", pendingGrid);
                     renderBar(diceBar);
                 }
             },
@@ -184,13 +235,73 @@ function openConfig(diceBar) {
         },
         default: "save",
         render: (html) => {
+            // ── Tab switching ──────────────────────────────────────────────
             html.on("click", ".sqd-tab", (e) => {
+                const tab = e.currentTarget.dataset.tab;
                 html.find(".sqd-tab").removeClass("sqd-tab-active");
                 $(e.currentTarget).addClass("sqd-tab-active");
                 html.find(".sqd-tab-panel").addClass("sqd-tab-panel-hidden");
-                html.find(`[data-panel="${e.currentTarget.dataset.tab}"]`).removeClass("sqd-tab-panel-hidden");
+                html.find(`[data-panel="${tab}"]`).removeClass("sqd-tab-panel-hidden");
+                if (tab === "layout") renderLayoutEditor(html, pendingGrid, diceMap);
             });
 
+            // ── Layout tab drag-and-drop ───────────────────────────────────
+            let dragFormula = null;
+
+            html.on("dragstart", ".sqd-layout-tile", (e) => {
+                dragFormula = $(e.currentTarget).data("formula");
+                e.originalEvent.dataTransfer.effectAllowed = "move";
+                setTimeout(() => $(e.currentTarget).addClass("sqd-dragging"), 0);
+            });
+
+            html.on("dragend", ".sqd-layout-tile", () => {
+                html.find(".sqd-layout-tile").removeClass(
+                    "sqd-dragging sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
+                );
+                dragFormula = null;
+            });
+
+            html.on("dragover", ".sqd-layout-tile", (e) => {
+                const tgt = $(e.currentTarget).data("formula");
+                if (!dragFormula || tgt === dragFormula) return;
+                e.preventDefault();
+
+                const rect   = e.currentTarget.getBoundingClientRect();
+                const xRatio = rect.width  > 0 ? (e.clientX - rect.left) / rect.width  : 0.5;
+                const yRatio = rect.height > 0 ? (e.clientY - rect.top)  / rect.height : 0.5;
+
+                html.find(".sqd-layout-tile").removeClass(
+                    "sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
+                );
+
+                let zone;
+                if      (yRatio < 0.3) zone = "top";
+                else if (yRatio > 0.7) zone = "bottom";
+                else if (xRatio < 0.5) zone = "left";
+                else                   zone = "right";
+
+                $(e.currentTarget).addClass(`sqd-drop-${zone}`).data("current-zone", zone);
+            });
+
+            html.on("dragleave", ".sqd-layout-tile", (e) => {
+                $(e.currentTarget).removeClass(
+                    "sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
+                );
+            });
+
+            html.on("drop", ".sqd-layout-tile", (e) => {
+                e.preventDefault();
+                const tgtFormula = $(e.currentTarget).data("formula");
+                const zone       = $(e.currentTarget).data("current-zone");
+                $(e.currentTarget).removeClass(
+                    "sqd-drop-left sqd-drop-right sqd-drop-top sqd-drop-bottom"
+                );
+                if (!dragFormula || dragFormula === tgtFormula || !zone) return;
+                applyGridDrop(pendingGrid, dragFormula, tgtFormula, zone);
+                renderLayoutEditor(html, pendingGrid, diceMap);
+            });
+
+            // ── Reset tab ─────────────────────────────────────────────────
             html.on("click", ".sqd-reset-position-btn", async () => {
                 await game.user.setFlag("star-quick-dice", "barPosition", null);
                 applyBarPosition(diceBar);
@@ -198,66 +309,31 @@ function openConfig(diceBar) {
 
             html.on("click", ".sqd-reset-dice-btn", async () => {
                 await game.user.unsetFlag("star-quick-dice", "customDice");
-                await game.user.unsetFlag("star-quick-dice", "diceOrder");
+                await game.user.unsetFlag("star-quick-dice", "barGrid");
                 await game.user.unsetFlag("star-quick-dice", "diceVisibility");
                 renderBar(diceBar);
             });
 
-            const tbody = html.find("tbody")[0];
-            let dragSrc = null;
-
-            html.on("mousedown", ".sqd-drag-handle", (e) => {
-                $(e.currentTarget).closest("tr").attr("draggable", "true");
-            });
-
-            html.on("dragstart", "tr", (e) => {
-                if (!$(e.currentTarget).attr("draggable")) return;
-                dragSrc = e.currentTarget;
-                e.originalEvent.dataTransfer.effectAllowed = "move";
-                setTimeout(() => $(dragSrc).addClass("sqd-dragging"), 0);
-            });
-
-            html.on("dragend", "tr", (e) => {
-                $(e.currentTarget).removeClass("sqd-dragging").removeAttr("draggable");
-                html.find("tr").removeClass("sqd-drag-over");
-                dragSrc = null;
-            });
-
-            html.on("dragover", "tr", (e) => {
-                if (!dragSrc || e.currentTarget === dragSrc) return;
-                e.preventDefault();
-                html.find("tr").removeClass("sqd-drag-over");
-                $(e.currentTarget).addClass("sqd-drag-over");
-            });
-
-            html.on("dragleave", "tr", (e) => {
-                $(e.currentTarget).removeClass("sqd-drag-over");
-            });
-
-            html.on("drop", "tr", (e) => {
-                e.preventDefault();
-                $(e.currentTarget).removeClass("sqd-drag-over");
-                if (!dragSrc || dragSrc === e.currentTarget) return;
-                const rows = [...tbody.querySelectorAll("tr")];
-                const srcIdx = rows.indexOf(dragSrc);
-                const tgtIdx = rows.indexOf(e.currentTarget);
-                if (srcIdx < tgtIdx) {
-                    e.currentTarget.after(dragSrc);
-                } else {
-                    e.currentTarget.before(dragSrc);
-                }
-            });
-
+            // ── Dice tab: delete ──────────────────────────────────────────
             html.on("click", ".sqd-delete-btn", (e) => {
-                const row = $(e.currentTarget).closest("tr");
+                const row     = $(e.currentTarget).closest("tr");
                 const formula = row.data("formula");
                 pendingCustom.splice(pendingCustom.findIndex(d => d.formula === formula), 1);
+                for (let r = 0; r < pendingGrid.length; r++) {
+                    const idx = pendingGrid[r].indexOf(formula);
+                    if (idx !== -1) {
+                        pendingGrid[r].splice(idx, 1);
+                        if (pendingGrid[r].length === 0) pendingGrid.splice(r, 1);
+                        break;
+                    }
+                }
                 row.remove();
             });
 
+            // ── Dice tab: add ─────────────────────────────────────────────
             html.on("click", ".sqd-add-btn", () => {
                 const input = html.find(".sqd-formula-input");
-                const raw = input.val().trim().toLowerCase();
+                const raw   = input.val().trim().toLowerCase();
 
                 if (!/^\d+d\d+$/.test(raw)) {
                     ui.notifications.warn("Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105.");
@@ -270,6 +346,10 @@ function openConfig(diceBar) {
 
                 const die = { label: formulaToLabel(raw), formula: raw };
                 pendingCustom.push(die);
+                diceMap.set(die.formula, die);
+                if (pendingGrid.length === 0) pendingGrid.push([die.formula]);
+                else pendingGrid[pendingGrid.length - 1].push(die.formula);
+
                 html.find("tbody").append(makeRow(die.label, die.formula, true));
                 input.val("").focus();
             });
@@ -279,6 +359,7 @@ function openConfig(diceBar) {
             });
         }
     });
+
     dialogInstance.render(true);
 }
 
@@ -289,6 +370,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
     const diceBar = $(`<div class="quick-dice-bar">
         <span class="sqd-bar-handle" title="Drag to move bar">&#8801;</span>
+        <div class="sqd-dice-grid"></div>
         <button class="sqd-config-btn" title="Configure Dice">&#9881;</button>
     </div>`);
 
@@ -299,3 +381,5 @@ Hooks.once("ready", () => {
 
     diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar));
 });
+
+if (typeof module !== "undefined") module.exports = { applyGridDrop };
