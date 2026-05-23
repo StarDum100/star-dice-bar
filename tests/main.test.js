@@ -397,6 +397,125 @@ describe("Star Quick Dice", () => {
     });
   });
 
+  describe("config dialog — tab navigation", () => {
+    let html;
+    beforeEach(() => {
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      ({ html } = openDialogHtml());
+    });
+
+    function visiblePanel() {
+      return ["dice", "layout", "reset"].find(
+        name => !html.find(`[data-panel="${name}"]`).hasClass("sqd-tab-panel-hidden")
+      );
+    }
+
+    function activeTab() {
+      return html.find(".sqd-tab.sqd-tab-active").data("tab");
+    }
+
+    describe("initial state", () => {
+      it("dice tab is active on open", () => {
+        expect(activeTab()).toBe("dice");
+      });
+
+      it("layout and reset tabs are not active on open", () => {
+        expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
+      });
+
+      it("only the dice panel is visible on open", () => {
+        expect(visiblePanel()).toBe("dice");
+      });
+    });
+
+    describe("clicking Layout tab", () => {
+      beforeEach(() => { html.find("[data-tab='layout']").trigger("click"); });
+
+      it("shows the layout panel", () => {
+        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      });
+
+      it("hides the dice and reset panels", () => {
+        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+      });
+
+      it("marks the layout tab active", () => {
+        expect(activeTab()).toBe("layout");
+      });
+
+      it("removes active class from dice and reset tabs", () => {
+        expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
+      });
+    });
+
+    describe("clicking Reset tab", () => {
+      beforeEach(() => { html.find("[data-tab='reset']").trigger("click"); });
+
+      it("shows the reset panel", () => {
+        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      });
+
+      it("hides the dice and layout panels", () => {
+        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+      });
+
+      it("marks the reset tab active", () => {
+        expect(activeTab()).toBe("reset");
+      });
+
+      it("removes active class from dice and layout tabs", () => {
+        expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
+      });
+    });
+
+    describe("clicking Dice tab after navigating away", () => {
+      beforeEach(() => {
+        html.find("[data-tab='layout']").trigger("click");
+        html.find("[data-tab='dice']").trigger("click");
+      });
+
+      it("shows the dice panel", () => {
+        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      });
+
+      it("hides the layout and reset panels", () => {
+        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+      });
+
+      it("marks the dice tab active", () => {
+        expect(activeTab()).toBe("dice");
+      });
+    });
+
+    it("cycles through all three tabs correctly", () => {
+      html.find("[data-tab='layout']").trigger("click");
+      expect(visiblePanel()).toBe("layout");
+
+      html.find("[data-tab='reset']").trigger("click");
+      expect(visiblePanel()).toBe("reset");
+
+      html.find("[data-tab='dice']").trigger("click");
+      expect(visiblePanel()).toBe("dice");
+    });
+
+    it("exactly one panel is visible at all times", () => {
+      for (const tab of ["layout", "reset", "dice", "layout"]) {
+        html.find(`[data-tab='${tab}']`).trigger("click");
+        const visibleCount = ["dice", "layout", "reset"].filter(
+          name => !html.find(`[data-panel="${name}"]`).hasClass("sqd-tab-panel-hidden")
+        ).length;
+        expect(visibleCount).toBe(1);
+      }
+    });
+  });
+
   describe("config dialog — layout tab", () => {
     function openLayout(flagOverrides = {}) {
       setupBar(flagOverrides);
