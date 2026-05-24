@@ -245,6 +245,25 @@ describe("Star Quick Dice", () => {
       expect(document.querySelector(".sqd-dice-bar").style.top).toBe("10px");
     });
 
+    it("computes default center position after dice buttons are rendered", () => {
+      // outerWidth() is used for centering math; capture the DOM state at the
+      // moment it is first called on the bar so we can assert renderBar ran first.
+      let diceCountAtPositionCalc = null;
+      const original = $.fn.outerWidth;
+      $.fn.outerWidth = function () {
+        if (diceCountAtPositionCalc === null && this.hasClass && this.hasClass("sqd-dice-bar")) {
+          diceCountAtPositionCalc = document.querySelectorAll("button[data-roll]").length;
+        }
+        return original.apply(this, arguments);
+      };
+      try {
+        setupBar();
+      } finally {
+        $.fn.outerWidth = original;
+      }
+      expect(diceCountAtPositionCalc).toBeGreaterThan(0);
+    });
+
     it("saves position to flag on drag end", () => {
       setupBar();
       global.game.user.setFlag.mockClear();

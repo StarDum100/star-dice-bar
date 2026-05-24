@@ -447,8 +447,8 @@ Hooks.once("ready", () => {
     </div>`);
 
     $("body").append(diceBar);
-    applyBarPosition(diceBar);
     renderBar(diceBar);
+    applyBarPosition(diceBar);
     initBarDrag(diceBar);
     if (game.settings.get("star-quick-dice", "barHidden")) diceBar.hide();
 
