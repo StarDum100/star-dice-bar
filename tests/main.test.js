@@ -971,6 +971,23 @@ describe("Star Quick Dice", () => {
       );
     });
 
+    it("reset dice button saves all-visible diceVisibility when Save is clicked after reset", async () => {
+      setupBar({ diceVisibility: { "1d4": false, "1d6": false } });
+      document.querySelector(".sqd-config-btn").click();
+      const { options } = openDialogHtml();
+      const instance = global.foundry.applications.api.DialogV2.__lastInstance;
+      const localHtml = $(instance.element);
+      localHtml.find(".sqd-reset-dice-btn").trigger("click");
+      global.game.user.setFlag.mockClear();
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: instance.element });
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice",
+        "diceVisibility",
+        Object.fromEntries(["1d4","1d6","1d8","1d10","1d12","1d20","1d100"].map(f => [f, true]))
+      );
+    });
+
     it("reset dice button previews built-in dice only on the bar immediately", () => {
       setupBar({ customDice: ["1d105"] });
       document.querySelector(".sqd-config-btn").click();

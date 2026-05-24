@@ -350,6 +350,7 @@ async function openConfig(diceBar) {
                 pendingCustom.splice(0);
                 pendingGrid.splice(0, pendingGrid.length, [...BUILT_IN_DICE]);
                 $html.find("tbody tr").has(".sqd-delete-btn").remove();
+                $html.find("tbody input[type=checkbox]").prop("checked", true);
 
                 if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
                     renderLayoutEditor($html, pendingGrid);
