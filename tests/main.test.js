@@ -1075,6 +1075,26 @@ describe("Star Quick Dice", () => {
     });
   });
 
+  describe("config dialog — single instance guard", () => {
+    it("does not open a second dialog when config button is clicked while one is already open", () => {
+      setupBar();
+      global.foundry.applications.api.DialogV2.wait.mockClear();
+      document.querySelector(".sqd-config-btn").click(); // opens dialog (promise pending)
+      document.querySelector(".sqd-config-btn").click(); // should be ignored
+      expect(global.foundry.applications.api.DialogV2.wait).toHaveBeenCalledTimes(1);
+    });
+
+    it("allows opening a new dialog after the previous one closes", async () => {
+      setupBar();
+      global.foundry.applications.api.DialogV2.wait.mockClear();
+      document.querySelector(".sqd-config-btn").click();
+      global.foundry.applications.api.DialogV2.__resolveDialog(null);
+      await new Promise(r => setTimeout(r, 0));
+      document.querySelector(".sqd-config-btn").click();
+      expect(global.foundry.applications.api.DialogV2.wait).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe("resilience", () => {
     beforeEach(() => { setupBar(); });
 

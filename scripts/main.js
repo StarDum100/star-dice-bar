@@ -452,7 +452,16 @@ Hooks.once("ready", () => {
     initBarDrag(diceBar);
     if (game.settings.get("star-quick-dice", "barHidden")) diceBar.hide();
 
-    diceBar.find(".sqd-config-btn").click(() => openConfig(diceBar));
+    let configOpen = false;
+    diceBar.find(".sqd-config-btn").click(async () => {
+        if (configOpen) return;
+        configOpen = true;
+        try {
+            await openConfig(diceBar);
+        } finally {
+            configOpen = false;
+        }
+    });
 });
 
 if (typeof module !== "undefined") module.exports = {};
