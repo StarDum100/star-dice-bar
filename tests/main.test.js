@@ -89,13 +89,13 @@ describe("Star Quick Dice", () => {
       it("hides the bar when called with true", () => {
         setupBar();
         onChange(true);
-        expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+        expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
       });
 
       it("shows the bar when called with false", () => {
         setupBar({ barHidden: true });
         onChange(false);
-        expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+        expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
       });
     });
   });
@@ -106,7 +106,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("appends the dice bar to body", () => {
-      expect(document.querySelector(".quick-dice-bar")).not.toBeNull();
+      expect(document.querySelector(".sqd-dice-bar")).not.toBeNull();
     });
 
     it("renders 7 dice buttons by default", () => {
@@ -162,12 +162,12 @@ describe("Star Quick Dice", () => {
 
       it("adds sqd-bar-multirow class when barGrid has multiple rows", () => {
         setupBar({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
-        expect(document.querySelector(".quick-dice-bar").classList.contains("sqd-bar-multirow")).toBe(true);
+        expect(document.querySelector(".sqd-dice-bar").classList.contains("sqd-bar-multirow")).toBe(true);
       });
 
       it("does not add sqd-bar-multirow class for a single-row barGrid", () => {
         setupBar();
-        expect(document.querySelector(".quick-dice-bar").classList.contains("sqd-bar-multirow")).toBe(false);
+        expect(document.querySelector(".sqd-dice-bar").classList.contains("sqd-bar-multirow")).toBe(false);
       });
     });
 
@@ -235,14 +235,14 @@ describe("Star Quick Dice", () => {
   describe("bar positioning", () => {
     it("applies saved position from barPosition flag", () => {
       setupBar({ barPosition: { left: 200, top: 150 } });
-      const bar = document.querySelector(".quick-dice-bar");
+      const bar = document.querySelector(".sqd-dice-bar");
       expect(bar.style.left).toBe("200px");
       expect(bar.style.top).toBe("150px");
     });
 
     it("applies a default top of 10px when no barPosition flag is set", () => {
       setupBar();
-      expect(document.querySelector(".quick-dice-bar").style.top).toBe("10px");
+      expect(document.querySelector(".sqd-dice-bar").style.top).toBe("10px");
     });
 
     it("saves position to flag on drag end", () => {
@@ -674,22 +674,22 @@ describe("Star Quick Dice", () => {
     it("checking the checkbox hides the bar immediately for preview", () => {
       const html = openExtra();
       html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
-      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
     });
 
     it("unchecking the checkbox shows the bar immediately for preview", () => {
       const html = openExtra({ barHidden: true });
       html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
-      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
     });
 
     it("Cancel restores the bar to visible when checkbox was checked but not saved", async () => {
       const html = openExtra();
       html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
-      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
       global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
-      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
     });
 
     it("Save saves barHidden as true when checkbox is checked", async () => {
@@ -721,7 +721,7 @@ describe("Star Quick Dice", () => {
       const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
     });
 
     it("Save shows the bar when checkbox is unchecked", async () => {
@@ -734,17 +734,17 @@ describe("Star Quick Dice", () => {
       const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
     });
 
     it("hides the bar on load when barHidden flag is true", () => {
       setupBar({ barHidden: true });
-      expect(document.querySelector(".quick-dice-bar").style.display).toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
     });
 
     it("shows the bar on load when barHidden flag is not set", () => {
       setupBar();
-      expect(document.querySelector(".quick-dice-bar").style.display).not.toBe("none");
+      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
     });
 
   });
@@ -901,7 +901,7 @@ describe("Star Quick Dice", () => {
       document.querySelector(".sqd-config-btn").click();
       const { html: localHtml } = openDialogHtml();
       localHtml.find(".sqd-reset-position-btn").trigger("click");
-      const bar = document.querySelector(".quick-dice-bar");
+      const bar = document.querySelector(".sqd-dice-bar");
       expect(bar.style.left).not.toBe("200px");
       expect(bar.style.top).not.toBe("150px");
     });
@@ -938,8 +938,8 @@ describe("Star Quick Dice", () => {
       localHtml.find(".sqd-reset-position-btn").trigger("click");
       global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
-      expect(document.querySelector(".quick-dice-bar").style.left).toBe("200px");
-      expect(document.querySelector(".quick-dice-bar").style.top).toBe("150px");
+      expect(document.querySelector(".sqd-dice-bar").style.left).toBe("200px");
+      expect(document.querySelector(".sqd-dice-bar").style.top).toBe("150px");
     });
 
     it("reset position button does not close the dialog", () => {

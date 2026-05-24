@@ -430,14 +430,14 @@ Hooks.once("init", () => {
         type: Boolean,
         default: false,
         onChange: (value) => {
-            if (value) $(".quick-dice-bar").hide();
-            else       $(".quick-dice-bar").show();
+            if (value) $(".sqd-dice-bar").hide();
+            else       $(".sqd-dice-bar").show();
         },
     });
 });
 
 Hooks.once("ready", () => {
-    const diceBar = $(`<div class="quick-dice-bar">
+    const diceBar = $(`<div class="sqd-dice-bar">
         <div class="sqd-bar-controls">
             <span class="sqd-bar-handle" title="Drag to move bar">&#8801;</span>
             <button class="sqd-config-btn" title="Configure Dice">&#9881;</button>

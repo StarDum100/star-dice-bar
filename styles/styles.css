@@ -1,6 +1,6 @@
 /* ── Bar ─────────────────────────────────────────────────────────────────── */
 
-.quick-dice-bar {
+.sqd-dice-bar {
     position: fixed;
     z-index: 70;
     display: flex;
@@ -26,7 +26,7 @@
     align-items: center;
 }
 
-.quick-dice-bar button {
+.sqd-dice-bar button {
     color: white;
     background: #2c2c2c;
     border: 1px solid #555;
@@ -35,7 +35,7 @@
     cursor: pointer;
 }
 
-.quick-dice-bar button:hover {
+.sqd-dice-bar button:hover {
     background: #444;
 }
 
@@ -67,7 +67,7 @@
 .sqd-config-btn   { order: 3; }
 
 /* Multi-row: controls become a stacked column pinned to the top-left */
-.quick-dice-bar.sqd-bar-multirow .sqd-bar-controls {
+.sqd-dice-bar.sqd-bar-multirow .sqd-bar-controls {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -76,7 +76,7 @@
 }
 
 /* Multi-row: buttons fill available width in equal columns */
-.quick-dice-bar.sqd-bar-multirow .sqd-bar-row {
+.sqd-dice-bar.sqd-bar-multirow .sqd-bar-row {
     display: grid;
     grid-template-columns: repeat(var(--sqd-cols), minmax(0, 1fr));
     gap: 4px;
