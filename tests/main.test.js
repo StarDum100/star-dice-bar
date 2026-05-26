@@ -1459,17 +1459,21 @@ describe("Star Quick Dice", () => {
       );
     });
 
-    it("warns and does not save when a formula is edited to an invalid value", async () => {
+    it("warns and reverts the invalid row when a formula is edited to an invalid value", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
       html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("abc");
       global.game.user.setFlag.mockClear();
       global.ui.notifications.warn.mockClear();
       await saveDialog(options);
       expect(global.ui.notifications.warn).toHaveBeenCalled();
-      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "customDice", expect.anything());
+      // Save still proceeds; invalid row keeps its original formula.
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([expect.objectContaining({ formula: "1d6" })])
+      );
     });
 
-    it("warns and does not save when two formulas are edited to the same value", async () => {
+    it("warns and keeps original formula when a formula is edited to a duplicate value", async () => {
       const { html, options } = openDiceTab({
         customDice: [{ formula: "1d6", label: "" }, { formula: "1d8", label: "" }],
       });
@@ -1478,7 +1482,47 @@ describe("Star Quick Dice", () => {
       global.ui.notifications.warn.mockClear();
       await saveDialog(options);
       expect(global.ui.notifications.warn).toHaveBeenCalled();
-      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "customDice", expect.anything());
+      // Save proceeds; the duplicate row reverts to its original formula.
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([expect.objectContaining({ formula: "1d8" })])
+      );
+    });
+
+    it("saves valid edits when one of multiple formula edits is invalid", async () => {
+      const { html, options } = openDiceTab({
+        customDice: [{ formula: "1d6", label: "" }, { formula: "1d8", label: "" }],
+      });
+      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("abc");
+      html.find('tr[data-formula="1d8"] .sqd-formula-cell-input').val("1d10");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([
+          expect.objectContaining({ formula: "1d6" }),  // invalid edit reverted
+          expect.objectContaining({ formula: "1d10" }), // valid edit applied
+        ])
+      );
+    });
+
+    it("does not edit a formula to another existing formula when that other die has an invalid edit", async () => {
+      // Row A wants 1d4→1d6; row B (currently 1d6) has an invalid edit.
+      // 1d6 is kept by row B, so row A's edit must be blocked.
+      const { html, options } = openDiceTab({
+        customDice: [{ formula: "1d4", label: "" }, { formula: "1d6", label: "" }],
+      });
+      html.find('tr[data-formula="1d4"] .sqd-formula-cell-input').val("1d6");
+      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("bad");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([
+          expect.objectContaining({ formula: "1d4" }), // blocked (1d6 is occupied)
+          expect.objectContaining({ formula: "1d6" }), // reverted (invalid edit)
+        ])
+      );
     });
 
     it("visibility is keyed by the new formula after a formula edit", async () => {

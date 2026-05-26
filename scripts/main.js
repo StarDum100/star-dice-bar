@@ -433,42 +433,52 @@ async function openConfig(diceBar) {
                 callback: async (event, button, dialog) => {
                     const $html = $(dialog.element);
 
-                    // Read and validate formula edits from the table rows.
-                    const editedRows = [];
-                    const formulasSeen = new Set();
-                    let editValid = true;
+                    // Phase 1: read all rows; warn on invalid formulas per-row but keep going.
+                    const rowData = [];
                     $html.find("tbody tr").each(function () {
-                        if (!editValid) return false;
-                        const $row    = $(this);
+                        const $row       = $(this);
                         const oldFormula = $row.data("formula");
-                        const newRaw  = $row.find(".sqd-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
-                        const newLabel = $row.find(".sqd-nick-cell-input").val().trim();
-                        const checked  = $row.find("input[type=checkbox]").prop("checked");
-                        if (!isValidFormula(newRaw)) {
-                            ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" is not a valid dice formula.`);
-                            editValid = false;
-                        } else if (formulasSeen.has(newRaw)) {
-                            ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" appears more than once.`);
-                            editValid = false;
-                        } else {
-                            formulasSeen.add(newRaw);
-                            editedRows.push({ oldFormula, newFormula: newRaw, newLabel, checked });
+                        const newRaw     = $row.find(".sqd-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
+                        const newLabel   = $row.find(".sqd-nick-cell-input").val().trim();
+                        const checked    = $row.find("input[type=checkbox]").prop("checked");
+                        const formulaOk  = isValidFormula(newRaw);
+                        if (!formulaOk) {
+                            ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" is not a valid formula — keeping original.`);
                         }
+                        rowData.push({ oldFormula, newRaw, newLabel, checked, formulaOk });
                     });
-                    if (!editValid) return false;
 
-                    // Apply formula/label edits to pending state.
-                    const formulaMap = new Map(editedRows.map(r => [r.oldFormula, r.newFormula]));
-                    for (const row of editedRows) {
-                        const entry = pendingCustom.find(d => d.formula === row.oldFormula);
-                        if (entry) { entry.formula = row.newFormula; entry.label = row.newLabel; }
+                    // Originals that won't vacate: invalid edit, or formula not actually changed.
+                    // Any valid edit targeting one of these formulas would create a duplicate.
+                    const keepOriginals = new Set(
+                        rowData.filter(r => !r.formulaOk || r.newRaw === r.oldFormula).map(r => r.oldFormula)
+                    );
+
+                    // Phase 2: commit each valid edit that doesn't collide with a kept original
+                    // or an already-committed formula from an earlier row.
+                    const committed    = new Set();
+                    const formulaMap   = new Map();
+                    const newVisibility = {};
+
+                    for (const row of rowData) {
+                        let resolvedFormula = row.oldFormula;
+                        if (row.formulaOk) {
+                            if (row.newRaw !== row.oldFormula && keepOriginals.has(row.newRaw)) {
+                                ui.notifications.warn(`${MODULE_TITLE}: "${row.newRaw}" already exists — keeping original.`);
+                            } else if (committed.has(row.newRaw)) {
+                                ui.notifications.warn(`${MODULE_TITLE}: "${row.newRaw}" already exists — keeping original.`);
+                            } else {
+                                resolvedFormula = row.newRaw;
+                                const entry = pendingCustom.find(d => d.formula === row.oldFormula);
+                                if (entry) { entry.formula = resolvedFormula; entry.label = row.newLabel; }
+                                if (resolvedFormula !== row.oldFormula) formulaMap.set(row.oldFormula, resolvedFormula);
+                            }
+                        }
+                        committed.add(resolvedFormula);
+                        newVisibility[resolvedFormula] = row.checked;
                     }
                     for (let r = 0; r < pendingGrid.length; r++) {
                         pendingGrid[r] = pendingGrid[r].map(f => formulaMap.get(f) ?? f);
-                    }
-                    const newVisibility = {};
-                    for (const { newFormula, checked } of editedRows) {
-                        newVisibility[newFormula] = checked;
                     }
 
                     saved = true;
