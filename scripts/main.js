@@ -6,16 +6,20 @@
 const MODULE_ID = "star-quick-dice";
 const MODULE_TITLE = "Star Quick Dice";
 
-const BUILT_IN_DICE = ["1d4", "1d6", "1d8", "1d10", "1d12", "1d20", "1d100"];
-
 const ROLL_MODES = ["normal", "advantage", "disadvantage"];
 const MODE_LABELS = { normal: "Normal", advantage: "Adv", disadvantage: "Dis" };
 
+// Dice notation is case-insensitive — silently treat an uppercase "D" as "d".
+function normalizeFormula(formula) {
+    return String(formula).replace(/D/g, "d");
+}
+
 // A custom die formula: one or more `NdX` dice terms and/or integers joined by + / -,
 // e.g. "1d20", "2d6+3", "1d8+1d6". Leading sign and bare die size (e.g. "d6") are rejected.
-const FORMULA_RE = /^\d+(?:d\d+)?(?:[+-]\d+(?:d\d+)?)*$/;
+// Case-insensitive: "1D6" is accepted and normalized to "1d6".
+const FORMULA_RE = /^\d+(?:d\d+)?(?:[+-]\d+(?:d\d+)?)*$/i;
 function isValidFormula(raw) {
-    return FORMULA_RE.test(raw) && raw.includes("d");
+    return FORMULA_RE.test(raw) && /d/i.test(raw);
 }
 
 // Advantage/disadvantage doubles each die term and keeps the highest/lowest half,
@@ -41,9 +45,10 @@ function escapeHtml(str) {
 function getCustomDice() {
     const saved = game.user.getFlag(MODULE_ID, "customDice") ?? [];
     // Legacy saved data stored plain formula strings; normalize to { formula, label }.
+    // Formulas are normalized to lowercase "d" so any data saved with "D" still resolves.
     return saved.map(d => typeof d === "string"
-        ? { formula: d, label: "" }
-        : { formula: d?.formula ?? "", label: d?.label ?? "" });
+        ? { formula: normalizeFormula(d), label: "" }
+        : { formula: normalizeFormula(d?.formula ?? ""), label: d?.label ?? "" });
 }
 
 function customFormulas(customDice = getCustomDice()) {
@@ -53,13 +58,13 @@ function customFormulas(customDice = getCustomDice()) {
 function getBarGrid(customDice = getCustomDice()) {
     const saved = game.user.getFlag(MODULE_ID, "barGrid");
     if (saved?.length) return saved;
-    return [[...BUILT_IN_DICE, ...customFormulas(customDice)]];
+    return [customFormulas(customDice)];
 }
 
 function getVisibility(customDice = getCustomDice()) {
     const saved = game.user.getFlag(MODULE_ID, "diceVisibility") ?? {};
     const visibility = {};
-    for (const formula of [...BUILT_IN_DICE, ...customFormulas(customDice)]) {
+    for (const formula of customFormulas(customDice)) {
         visibility[formula] = saved[formula] !== false;
     }
     return visibility;
@@ -119,7 +124,7 @@ function renderBar(diceBar, overrides = {}) {
     const customDice = overrides.customDice ?? getCustomDice();
     const grid       = overrides.grid       ?? getBarGrid(customDice);
     const visibility = overrides.visibility ?? getVisibility(customDice);
-    const knownDice  = new Set([...BUILT_IN_DICE, ...customFormulas(customDice)]);
+    const knownDice  = new Set(customFormulas(customDice));
     const labels     = new Map(customDice.map(d => [d.formula, d.label]));
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
@@ -147,6 +152,10 @@ function renderBar(diceBar, overrides = {}) {
         });
         gridEl.append(rowEl);
     });
+
+    if (gridEl.find("button[data-roll]").length === 0) {
+        gridEl.append('<span class="sqd-empty-hint">Click the gear to add dice</span>');
+    }
 }
 
 function renderLayoutEditor(html, pendingGrid) {
@@ -293,19 +302,17 @@ async function openConfig(diceBar) {
             applyBarPosition(diceBar, null);
         });
 
-        $html.on("click", ".sqd-reset-dice-btn", () => {
+        $html.on("click", ".sqd-clear-dice-btn", () => {
             pendingResetDice = true;
             pendingCustom.splice(0);
-            pendingGrid.splice(0, pendingGrid.length, [...BUILT_IN_DICE]);
-            $html.find("tbody tr").has(".sqd-delete-btn").remove();
-            $html.find("tbody input[type=checkbox]").prop("checked", true);
+            pendingGrid.splice(0, pendingGrid.length, []);
+            $html.find("tbody tr").remove();
 
             if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
                 renderLayoutEditor($html, pendingGrid);
             }
 
-            const resetVisibility = Object.fromEntries(BUILT_IN_DICE.map(f => [f, true]));
-            renderBar(diceBar, { customDice: [], grid: [[...BUILT_IN_DICE]], visibility: resetVisibility });
+            renderBar(diceBar, { customDice: [], grid: [[]], visibility: {} });
         });
     }
 
@@ -331,14 +338,14 @@ async function openConfig(diceBar) {
         $html.on("click", ".sqd-add-btn", () => {
             const input     = $html.find(".sqd-formula-input");
             const nickInput = $html.find(".sqd-nick-input");
-            const raw  = input.val().trim().toLowerCase().replace(/\s+/g, "");
+            const raw  = normalizeFormula(input.val().trim().replace(/\s+/g, ""));
             const nick = nickInput.val().trim();
 
             if (!isValidFormula(raw)) {
                 ui.notifications.warn(`${MODULE_TITLE}: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6.`);
                 return;
             }
-            if ([...BUILT_IN_DICE, ...customFormulas(pendingCustom)].includes(raw)) {
+            if (customFormulas(pendingCustom).includes(raw)) {
                 ui.notifications.warn(`${MODULE_TITLE}: ${raw} already exists.`);
                 return;
             }
@@ -364,7 +371,7 @@ async function openConfig(diceBar) {
         });
     }
 
-    const allDice      = new Set([...BUILT_IN_DICE, ...customFormulas(pendingCustom)]);
+    const allDice      = new Set(customFormulas(pendingCustom));
     const customLabels = new Map(pendingCustom.map(d => [d.formula, d.label]));
     const flatDice     = pendingGrid.flat().filter(f => allDice.has(f));
 
@@ -416,10 +423,10 @@ async function openConfig(diceBar) {
                 </div>
                 <div class="sqd-reset-item">
                     <div>
-                        <strong>Reset Dice Buttons</strong>
-                        <p>Remove all custom dice and restore the default visibility and layout.</p>
+                        <strong>Clear All Dice</strong>
+                        <p>Remove every die from the bar.</p>
                     </div>
-                    <button type="button" class="sqd-reset-dice-btn">Reset Dice</button>
+                    <button type="button" class="sqd-clear-dice-btn">Clear Dice</button>
                 </div>
             </div>
         </div>

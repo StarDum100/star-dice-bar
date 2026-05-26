@@ -1,7 +1,7 @@
 {
   "id": "star-quick-dice",
   "title": "Star Quick Dice",
-  "description": "Adds quick buttons for common dice rolls.",
+  "description": "Adds a customizable quick-access bar for rolling dice and formulas.",
   "version": "1.0.0",
   "authors": [
     {

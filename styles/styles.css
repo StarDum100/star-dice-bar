@@ -26,6 +26,15 @@
     align-items: center;
 }
 
+.sqd-empty-hint {
+    color: #888;
+    font-size: 12px;
+    font-style: italic;
+    padding: 4px 8px;
+    white-space: nowrap;
+    align-self: center;
+}
+
 .sqd-dice-bar button {
     color: white;
     background: #2c2c2c;
@@ -329,7 +338,7 @@
 }
 
 .sqd-reset-position-btn,
-.sqd-reset-dice-btn {
+.sqd-clear-dice-btn {
     white-space: nowrap;
     background: #2c2c2c;
     border: 1px solid #555;
@@ -341,4 +350,4 @@
 }
 
 .sqd-reset-position-btn:hover,
-.sqd-reset-dice-btn:hover { background: #444; }
+.sqd-clear-dice-btn:hover { background: #444; }
