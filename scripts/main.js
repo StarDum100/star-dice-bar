@@ -16,6 +16,21 @@ function isValidFormula(raw) {
     return FORMULA_RE.test(raw) && raw.includes("d");
 }
 
+// Composite die key: "formula|label" when a label exists, plain formula when it doesn't.
+// dieKey("1d6", "") === "1d6" keeps barGrid and diceVisibility backwards compatible.
+function dieKey(formula, label) {
+    return label ? `${formula}|${label}` : formula;
+}
+
+function dieKeys(customDice) {
+    return customDice.map(d => dieKey(d.formula, d.label));
+}
+
+// Human-readable identifier shown in warnings: "formula (label)" or plain "formula".
+function dieDisplay(formula, label) {
+    return label ? `${formula} (${label})` : formula;
+}
+
 // Advantage/disadvantage doubles each die term and keeps the highest/lowest half,
 // e.g. 1d20 -> 2d20kh1, 2d6 -> 4d6kl2. Flat +/- modifiers are left untouched.
 function buildRollFormula(formula, mode) {
@@ -41,21 +56,17 @@ function getCustomDice() {
     return saved.map(d => ({ formula: d?.formula ?? "", label: d?.label ?? "" }));
 }
 
-function customFormulas(customDice = getCustomDice()) {
-    return customDice.map(d => d.formula);
-}
-
 function getBarGrid(customDice = getCustomDice()) {
     const saved = game.user.getFlag(MODULE_ID, "barGrid");
     if (saved?.length) return saved;
-    return [customFormulas(customDice)];
+    return [dieKeys(customDice)];
 }
 
 function getVisibility(customDice = getCustomDice()) {
     const saved = game.user.getFlag(MODULE_ID, "diceVisibility") ?? {};
     const visibility = {};
-    for (const formula of customFormulas(customDice)) {
-        visibility[formula] = saved[formula] !== false;
+    for (const key of dieKeys(customDice)) {
+        visibility[key] = saved[key] !== false;
     }
     return visibility;
 }
@@ -114,8 +125,8 @@ function renderBar(diceBar, overrides = {}) {
     const customDice = overrides.customDice ?? getCustomDice();
     const grid       = overrides.grid       ?? getBarGrid(customDice);
     const visibility = overrides.visibility ?? getVisibility(customDice);
-    const knownDice  = new Set(customFormulas(customDice));
-    const labels     = new Map(customDice.map(d => [d.formula, d.label]));
+    const knownKeys  = new Set(dieKeys(customDice));
+    const diceByKey  = new Map(customDice.map(d => [dieKey(d.formula, d.label), d]));
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
     const multirow = grid.length > 1;
@@ -129,14 +140,16 @@ function renderBar(diceBar, overrides = {}) {
 
     grid.forEach(row => {
         const rowEl = $('<div class="sqd-bar-row">');
-        row.forEach(formula => {
-            if (!knownDice.has(formula)) return;
-            const label = labels.get(formula) || "";
+        row.forEach(key => {
+            if (!knownKeys.has(key)) return;
+            const die     = diceByKey.get(key);
+            const formula = die.formula;
+            const label   = die.label || "";
             const btn = $("<button>")
                 .attr("data-roll", formula)
                 .attr("title", formula)
                 .text(label || formula);
-            if (!visibility[formula]) btn.hide();
+            if (!visibility[key]) btn.hide();
             btn.click(makeRollClickHandler(diceBar, formula, label));
             rowEl.append(btn);
         });
@@ -148,7 +161,7 @@ function renderBar(diceBar, overrides = {}) {
     }
 }
 
-function renderLayoutEditor(html, pendingGrid) {
+function renderLayoutEditor(html, pendingGrid, pendingCustom = []) {
     const panel = html.find('[data-panel="layout"]');
     panel.empty();
 
@@ -157,6 +170,7 @@ function renderLayoutEditor(html, pendingGrid) {
         return;
     }
 
+    const diceByKey = new Map(pendingCustom.map(d => [dieKey(d.formula, d.label), d]));
     const flat    = pendingGrid.flat();
     const numRows = pendingGrid.length;
     const numCols = Math.ceil(flat.length / numRows);
@@ -175,10 +189,13 @@ function renderLayoutEditor(html, pendingGrid) {
         for (let c = 0; c < numCols; c++) {
             const idx = r * numCols + c;
             if (idx < flat.length) {
+                const key       = flat[idx];
+                const die       = diceByKey.get(key);
+                const tileLabel = die ? (die.label || die.formula) : key;
                 rowEl.append(
                     $('<div class="sqd-layout-tile" draggable="true">')
                         .attr("data-index", idx)
-                        .text(flat[idx])
+                        .text(tileLabel)
                 );
             } else {
                 rowEl.append($('<div class="sqd-layout-slot">').attr("data-index", idx));
@@ -210,17 +227,19 @@ async function openConfig(diceBar) {
     let pendingResetDice     = false;
 
     function makeRow(formula, isCustom, label = "") {
+        const key       = dieKey(formula, label);
         const safe      = escapeHtml(formula);
         const safeLabel = escapeHtml(label);
-        const checked = savedVisibility[formula] !== false ? "checked" : "";
+        const safeKey   = escapeHtml(key);
+        const checked   = savedVisibility[key] !== false ? "checked" : "";
         const deleteBtn = isCustom
             ? `<button type="button" class="sqd-delete-btn">&#10005;</button>`
             : "";
         return `
-            <tr data-formula="${safe}">
+            <tr data-formula="${safe}" data-key="${safeKey}">
                 <td><input type="text" class="sqd-formula-cell-input" value="${safe}"></td>
                 <td><input type="text" class="sqd-nick-cell-input" value="${safeLabel}" placeholder="Nickname"></td>
-                <td class="sqd-checkbox-cell"><input type="checkbox" name="${safe}" ${checked}></td>
+                <td class="sqd-checkbox-cell"><input type="checkbox" name="${safeKey}" ${checked}></td>
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
         `;
@@ -259,14 +278,14 @@ async function openConfig(diceBar) {
             dragIndex = -1;
             if (srcIdx === -1 || tgtIdx === srcIdx) return;
 
-            const flat    = pendingGrid.flat();
-            const formula = flat[srcIdx];
+            const flat = pendingGrid.flat();
+            const key  = flat[srcIdx];
             flat.splice(srcIdx, 1);
             const adjusted = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
-            flat.splice(Math.min(adjusted, flat.length), 0, formula);
+            flat.splice(Math.min(adjusted, flat.length), 0, key);
 
             reshapeGrid(pendingGrid, pendingGrid.length, flat);
-            renderLayoutEditor($html, pendingGrid);
+            renderLayoutEditor($html, pendingGrid, pendingCustom);
         });
 
         $html.on("change", ".sqd-rows-input", (e) => {
@@ -276,7 +295,7 @@ async function openConfig(diceBar) {
             if (n > flat.length) n = flat.length;
             $(e.target).val(n);
             reshapeGrid(pendingGrid, n, flat);
-            renderLayoutEditor($html, pendingGrid);
+            renderLayoutEditor($html, pendingGrid, pendingCustom);
         });
     }
 
@@ -299,7 +318,7 @@ async function openConfig(diceBar) {
             $html.find("tbody tr").remove();
 
             if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
-                renderLayoutEditor($html, pendingGrid);
+                renderLayoutEditor($html, pendingGrid, pendingCustom);
             }
 
             renderBar(diceBar, { customDice: [], grid: [[]], visibility: {} });
@@ -309,12 +328,12 @@ async function openConfig(diceBar) {
     function wireDiceTab($html) {
         $html.on("click", ".sqd-delete-btn", (e) => {
             const row       = $(e.currentTarget).closest("tr");
-            const formula   = row.data("formula");
-            const customIdx = pendingCustom.findIndex(d => d.formula === formula);
+            const key       = row.data("key");
+            const customIdx = pendingCustom.findIndex(d => dieKey(d.formula, d.label) === key);
             if (customIdx !== -1) {
                 pendingCustom.splice(customIdx, 1);
                 for (let r = 0; r < pendingGrid.length; r++) {
-                    const idx = pendingGrid[r].indexOf(formula);
+                    const idx = pendingGrid[r].indexOf(key);
                     if (idx !== -1) {
                         pendingGrid[r].splice(idx, 1);
                         if (pendingGrid[r].length === 0) pendingGrid.splice(r, 1);
@@ -335,14 +354,15 @@ async function openConfig(diceBar) {
                 ui.notifications.warn(`${MODULE_TITLE}: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6.`);
                 return;
             }
-            if (customFormulas(pendingCustom).includes(raw)) {
-                ui.notifications.warn(`${MODULE_TITLE}: ${raw} already exists.`);
+            if (pendingCustom.some(d => d.formula === raw && d.label === nick)) {
+                ui.notifications.warn(`${MODULE_TITLE}: ${dieDisplay(raw, nick)} already exists.`);
                 return;
             }
 
+            const key = dieKey(raw, nick);
             pendingCustom.push({ formula: raw, label: nick });
-            if (pendingGrid.length === 0) pendingGrid.push([raw]);
-            else pendingGrid[pendingGrid.length - 1].push(raw);
+            if (pendingGrid.length === 0) pendingGrid.push([key]);
+            else pendingGrid[pendingGrid.length - 1].push(key);
 
             $html.find("tbody").append(makeRow(raw, true, nick));
             input.val("").focus();
@@ -361,9 +381,9 @@ async function openConfig(diceBar) {
         });
     }
 
-    const allDice      = new Set(customFormulas(pendingCustom));
-    const customLabels = new Map(pendingCustom.map(d => [d.formula, d.label]));
-    const flatDice     = pendingGrid.flat().filter(f => allDice.has(f));
+    const allKeys   = new Set(dieKeys(pendingCustom));
+    const diceByKey = new Map(pendingCustom.map(d => [dieKey(d.formula, d.label), d]));
+    const flatKeys  = pendingGrid.flat().filter(k => allKeys.has(k));
 
     const content = `
         <div class="sqd-tabs">
@@ -378,9 +398,10 @@ async function openConfig(diceBar) {
                     <tr><th>Dice</th><th>Name</th><th>Visible</th><th></th></tr>
                 </thead>
                 <tbody>
-                    ${flatDice.map(formula =>
-                        makeRow(formula, customLabels.has(formula), customLabels.get(formula))
-                    ).join("")}
+                    ${flatKeys.map(key => {
+                        const die = diceByKey.get(key);
+                        return makeRow(die.formula, true, die.label);
+                    }).join("")}
                 </tbody>
             </table>
             <div class="sqd-add-row">
@@ -436,49 +457,50 @@ async function openConfig(diceBar) {
                     // Phase 1: read all rows; warn on invalid formulas per-row but keep going.
                     const rowData = [];
                     $html.find("tbody tr").each(function () {
-                        const $row       = $(this);
-                        const oldFormula = $row.data("formula");
-                        const newRaw     = $row.find(".sqd-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
-                        const newLabel   = $row.find(".sqd-nick-cell-input").val().trim();
-                        const checked    = $row.find("input[type=checkbox]").prop("checked");
-                        const formulaOk  = isValidFormula(newRaw);
+                        const $row      = $(this);
+                        const oldKey    = $row.data("key");
+                        const newRaw    = $row.find(".sqd-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
+                        const newLabel  = $row.find(".sqd-nick-cell-input").val().trim();
+                        const checked   = $row.find("input[type=checkbox]").prop("checked");
+                        const formulaOk = isValidFormula(newRaw);
+                        const newKey    = dieKey(newRaw, newLabel);
                         if (!formulaOk) {
                             ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" is not a valid formula — keeping original.`);
                         }
-                        rowData.push({ oldFormula, newRaw, newLabel, checked, formulaOk });
+                        rowData.push({ oldKey, newRaw, newLabel, newKey, checked, formulaOk });
                     });
 
-                    // Originals that won't vacate: invalid edit, or formula not actually changed.
-                    // Any valid edit targeting one of these formulas would create a duplicate.
-                    const keepOriginals = new Set(
-                        rowData.filter(r => !r.formulaOk || r.newRaw === r.oldFormula).map(r => r.oldFormula)
+                    // Originals that won't vacate: invalid edit, or key not actually changed.
+                    // Any valid edit targeting one of these keys would create a duplicate.
+                    const keepOriginalKeys = new Set(
+                        rowData.filter(r => !r.formulaOk || r.newKey === r.oldKey).map(r => r.oldKey)
                     );
 
                     // Phase 2: commit each valid edit that doesn't collide with a kept original
-                    // or an already-committed formula from an earlier row.
-                    const committed    = new Set();
-                    const formulaMap   = new Map();
+                    // or an already-committed key from an earlier row.
+                    const committed     = new Set();
+                    const keyMap        = new Map();
                     const newVisibility = {};
 
                     for (const row of rowData) {
-                        let resolvedFormula = row.oldFormula;
+                        let resolvedKey = row.oldKey;
                         if (row.formulaOk) {
-                            if (row.newRaw !== row.oldFormula && keepOriginals.has(row.newRaw)) {
-                                ui.notifications.warn(`${MODULE_TITLE}: "${row.newRaw}" already exists — keeping original.`);
-                            } else if (committed.has(row.newRaw)) {
-                                ui.notifications.warn(`${MODULE_TITLE}: "${row.newRaw}" already exists — keeping original.`);
+                            if (row.newKey !== row.oldKey && keepOriginalKeys.has(row.newKey)) {
+                                ui.notifications.warn(`${MODULE_TITLE}: "${dieDisplay(row.newRaw, row.newLabel)}" already exists — keeping original.`);
+                            } else if (committed.has(row.newKey)) {
+                                ui.notifications.warn(`${MODULE_TITLE}: "${dieDisplay(row.newRaw, row.newLabel)}" already exists — keeping original.`);
                             } else {
-                                resolvedFormula = row.newRaw;
-                                const entry = pendingCustom.find(d => d.formula === row.oldFormula);
-                                if (entry) { entry.formula = resolvedFormula; entry.label = row.newLabel; }
-                                if (resolvedFormula !== row.oldFormula) formulaMap.set(row.oldFormula, resolvedFormula);
+                                resolvedKey = row.newKey;
+                                const entry = pendingCustom.find(d => dieKey(d.formula, d.label) === row.oldKey);
+                                if (entry) { entry.formula = row.newRaw; entry.label = row.newLabel; }
+                                if (resolvedKey !== row.oldKey) keyMap.set(row.oldKey, resolvedKey);
                             }
                         }
-                        committed.add(resolvedFormula);
-                        newVisibility[resolvedFormula] = row.checked;
+                        committed.add(resolvedKey);
+                        newVisibility[resolvedKey] = row.checked;
                     }
                     for (let r = 0; r < pendingGrid.length; r++) {
-                        pendingGrid[r] = pendingGrid[r].map(f => formulaMap.get(f) ?? f);
+                        pendingGrid[r] = pendingGrid[r].map(k => keyMap.get(k) ?? k);
                     }
 
                     saved = true;
@@ -506,7 +528,7 @@ async function openConfig(diceBar) {
                 $(e.currentTarget).addClass("sqd-tab-active");
                 $html.find(".sqd-tab-panel").addClass("sqd-tab-panel-hidden");
                 $html.find(`[data-panel="${tab}"]`).removeClass("sqd-tab-panel-hidden");
-                if (tab === "layout") renderLayoutEditor($html, pendingGrid);
+                if (tab === "layout") renderLayoutEditor($html, pendingGrid, pendingCustom);
             });
 
             wireLayoutTab($html);

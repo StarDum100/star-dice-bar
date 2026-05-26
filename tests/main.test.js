@@ -1535,4 +1535,146 @@ describe("Star Quick Dice", () => {
       expect(Object.keys(visibilityCall[2])).not.toContain("1d6");
     });
   });
+
+  describe("duplicate formula support", () => {
+    function openDiceTab(flagOverrides = {}) {
+      setupBar(flagOverrides);
+      document.querySelector(".sqd-config-btn").click();
+      return openDialogHtml();
+    }
+
+    async function saveDialog(options) {
+      const instance = global.foundry.applications.api.DialogV2.__lastInstance;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: instance.element });
+    }
+
+    it("allows adding the same formula with a different nickname", () => {
+      global.ui.notifications.warn.mockClear();
+      setupBarWithDice();
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find(".sqd-formula-input").val("1d20");
+      html.find(".sqd-nick-input").val("Fire Attack");
+      html.find(".sqd-add-btn").trigger("click");
+      expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+    });
+
+    it("renders two buttons with the same formula but different labels", () => {
+      setupBar({ customDice: [
+        { formula: "1d6", label: "Fire" },
+        { formula: "1d6", label: "Ice" },
+      ]});
+      const buttons = [...document.querySelectorAll("button[data-roll='1d6']")];
+      expect(buttons).toHaveLength(2);
+      const labels = buttons.map(b => b.textContent.trim());
+      expect(labels).toContain("Fire");
+      expect(labels).toContain("Ice");
+    });
+
+    it("warns when the same formula and nickname combination already exists", () => {
+      global.ui.notifications.warn.mockClear();
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find(".sqd-formula-input").val("1d6");
+      html.find(".sqd-nick-input").val("Fire");
+      html.find(".sqd-add-btn").trigger("click");
+      global.ui.notifications.warn.mockClear();
+      html.find(".sqd-formula-input").val("1d6");
+      html.find(".sqd-nick-input").val("Fire");
+      html.find(".sqd-add-btn").trigger("click");
+      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
+        "Star Quick Dice: 1d6 (Fire) already exists."
+      );
+    });
+
+    it("allows the same formula with an empty nickname and with a nickname", () => {
+      global.ui.notifications.warn.mockClear();
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find(".sqd-formula-input").val("1d6");
+      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sqd-formula-input").val("1d6");
+      html.find(".sqd-nick-input").val("Fire");
+      html.find(".sqd-add-btn").trigger("click");
+      expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+      expect(html.find("tbody tr[data-formula='1d6']")).toHaveLength(2);
+    });
+
+    it("layout tile shows label instead of composite key for a labelled die", () => {
+      setupBar({ customDice: [{ formula: "1d6", label: "Fire" }] });
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find("[data-tab='layout']").trigger("click");
+      const tileText = html.find(".sqd-layout-tile").first().text().trim();
+      expect(tileText).toBe("Fire");
+      expect(tileText).not.toContain("|");
+    });
+
+    it("layout tile shows formula when die has no label", () => {
+      setupBar({ customDice: [{ formula: "1d6", label: "" }] });
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      html.find("[data-tab='layout']").trigger("click");
+      expect(html.find(".sqd-layout-tile").first().text().trim()).toBe("1d6");
+    });
+
+    it("saves two dice with the same formula but different labels as distinct entries", async () => {
+      const { options } = openDiceTab({ customDice: [
+        { formula: "1d6", label: "Fire" },
+        { formula: "1d6", label: "Ice" },
+      ]});
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([
+          expect.objectContaining({ formula: "1d6", label: "Fire" }),
+          expect.objectContaining({ formula: "1d6", label: "Ice" }),
+        ])
+      );
+    });
+
+    it("inline edit: changing label creates a new unique key", async () => {
+      const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Fire" }] });
+      html.find('tr[data-formula="1d6"] .sqd-nick-cell-input').val("Ice");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([expect.objectContaining({ formula: "1d6", label: "Ice" })])
+      );
+    });
+
+    it("visibility is keyed by composite key for a labelled die", async () => {
+      const { options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Fire" }] });
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      const visibilityCall = global.game.user.setFlag.mock.calls.find(c => c[1] === "diceVisibility");
+      expect(Object.keys(visibilityCall[2])).toContain("1d6|Fire");
+      expect(Object.keys(visibilityCall[2])).not.toContain("1d6");
+    });
+
+    it("barGrid stores composite keys for labelled dice", async () => {
+      const { options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Fire" }] });
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "barGrid",
+        expect.arrayContaining([expect.arrayContaining(["1d6|Fire"])])
+      );
+    });
+
+    it("barGrid stores plain formula for unlabelled dice (backwards compatible)", async () => {
+      const { options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "barGrid",
+        expect.arrayContaining([expect.arrayContaining(["1d6"])])
+      );
+    });
+  });
 });
