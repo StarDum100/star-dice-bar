@@ -3,8 +3,8 @@
 // loading them in the same realm (e.g. as classic scripts, or a hot-reload re-eval) throws
 // "Identifier 'MODULE_ID' has already been declared".
 (function () {
-const MODULE_ID = "star-quick-dice";
-const MODULE_TITLE = "Star Quick Dice";
+const MODULE_ID = "star-dice-bar";
+const MODULE_TITLE = "Star Dice Bar";
 
 const ROLL_MODES = ["normal", "advantage", "disadvantage"];
 const MODE_LABELS = { normal: "Normal", advantage: "Adv", disadvantage: "Dis" };
@@ -83,21 +83,21 @@ function applyBarPosition(diceBar, savedPos = game.user.getFlag(MODULE_ID, "barP
 
 function initBarDrag(diceBar) {
     let startX, startY, startLeft, startTop;
-    diceBar.find(".sqd-bar-handle").on("mousedown", (e) => {
+    diceBar.find(".sdb-bar-handle").on("mousedown", (e) => {
         e.preventDefault();
         startX    = e.clientX;
         startY    = e.clientY;
         startLeft = parseInt(diceBar.css("left")) || 0;
         startTop  = parseInt(diceBar.css("top"))  || 0;
 
-        $(document).on("mousemove.sqd-drag", (e) => {
+        $(document).on("mousemove.sdb-drag", (e) => {
             const left = Math.max(0, Math.min(window.innerWidth  - diceBar.outerWidth(),  startLeft + e.clientX - startX));
             const top  = Math.max(0, Math.min(window.innerHeight - diceBar.outerHeight(), startTop  + e.clientY - startY));
             diceBar.css({ left, top });
         });
 
-        $(document).on("mouseup.sqd-drag", () => {
-            $(document).off("mousemove.sqd-drag mouseup.sqd-drag");
+        $(document).on("mouseup.sdb-drag", () => {
+            $(document).off("mousemove.sdb-drag mouseup.sdb-drag");
             game.user.setFlag(MODULE_ID, "barPosition", {
                 left: parseInt(diceBar.css("left")),
                 top:  parseInt(diceBar.css("top")),
@@ -127,19 +127,19 @@ function renderBar(diceBar, overrides = {}) {
     const visibility = overrides.visibility ?? getVisibility(customDice);
     const knownKeys  = new Set(dieKeys(customDice));
     const diceByKey  = new Map(customDice.map(d => [dieKey(d.formula, d.label), d]));
-    const gridEl = diceBar.find(".sqd-dice-grid");
+    const gridEl = diceBar.find(".sdb-dice-grid");
     gridEl.empty();
     const multirow = grid.length > 1;
-    diceBar.toggleClass("sqd-bar-multirow", multirow);
+    diceBar.toggleClass("sdb-bar-multirow", multirow);
     if (multirow) {
         const maxCols = Math.max(...grid.map(r => r.length));
-        gridEl.css("--sqd-cols", maxCols);
+        gridEl.css("--sdb-cols", maxCols);
     } else {
-        gridEl.css("--sqd-cols", "");
+        gridEl.css("--sdb-cols", "");
     }
 
     grid.forEach(row => {
-        const rowEl = $('<div class="sqd-bar-row">');
+        const rowEl = $('<div class="sdb-bar-row">');
         row.forEach(key => {
             if (!knownKeys.has(key)) return;
             const die     = diceByKey.get(key);
@@ -157,7 +157,7 @@ function renderBar(diceBar, overrides = {}) {
     });
 
     if (gridEl.find("button[data-roll]").length === 0) {
-        gridEl.append('<span class="sqd-empty-hint">Click the gear to add dice</span>');
+        gridEl.append('<span class="sdb-empty-hint">Click the gear to add dice</span>');
     }
 }
 
@@ -166,7 +166,7 @@ function renderLayoutEditor(html, pendingGrid, pendingCustom = []) {
     panel.empty();
 
     if (pendingGrid.length === 0 || pendingGrid.every(r => r.length === 0)) {
-        panel.append('<p class="sqd-layout-empty">No dice configured. Add dice on the Dice tab.</p>');
+        panel.append('<p class="sdb-layout-empty">No dice configured. Add dice on the Dice tab.</p>');
         return;
     }
 
@@ -175,17 +175,17 @@ function renderLayoutEditor(html, pendingGrid, pendingCustom = []) {
     const numRows = pendingGrid.length;
     const numCols = Math.ceil(flat.length / numRows);
 
-    panel.append('<p class="sqd-layout-hint">Drag any die to a slot to reorder &middot; Change the row count to reorganize the grid</p>');
+    panel.append('<p class="sdb-layout-hint">Drag any die to a slot to reorder &middot; Change the row count to reorganize the grid</p>');
 
-    const controls = $('<div class="sqd-layout-controls">');
-    const rowInput = $('<input type="number" class="sqd-rows-input">')
+    const controls = $('<div class="sdb-layout-controls">');
+    const rowInput = $('<input type="number" class="sdb-rows-input">')
         .attr("min", 1).attr("max", flat.length).val(numRows);
-    controls.append($('<label class="sqd-rows-label">').text("Number of Rows: ").append(rowInput));
+    controls.append($('<label class="sdb-rows-label">').text("Number of Rows: ").append(rowInput));
     panel.append(controls);
 
-    const editor = $('<div class="sqd-layout-editor">');
+    const editor = $('<div class="sdb-layout-editor">');
     for (let r = 0; r < numRows; r++) {
-        const rowEl = $('<div class="sqd-layout-row">');
+        const rowEl = $('<div class="sdb-layout-row">');
         for (let c = 0; c < numCols; c++) {
             const idx = r * numCols + c;
             if (idx < flat.length) {
@@ -193,12 +193,12 @@ function renderLayoutEditor(html, pendingGrid, pendingCustom = []) {
                 const die       = diceByKey.get(key);
                 const tileLabel = die ? (die.label || die.formula) : key;
                 rowEl.append(
-                    $('<div class="sqd-layout-tile" draggable="true">')
+                    $('<div class="sdb-layout-tile" draggable="true">')
                         .attr("data-index", idx)
                         .text(tileLabel)
                 );
             } else {
-                rowEl.append($('<div class="sqd-layout-slot">').attr("data-index", idx));
+                rowEl.append($('<div class="sdb-layout-slot">').attr("data-index", idx));
             }
         }
         editor.append(rowEl);
@@ -233,14 +233,14 @@ async function openConfig(diceBar) {
         const safeKey   = escapeHtml(key);
         const checked   = savedVisibility[key] !== false ? "checked" : "";
         const deleteBtn = isCustom
-            ? `<button type="button" class="sqd-delete-btn">&#10005;</button>`
+            ? `<button type="button" class="sdb-delete-btn">&#10005;</button>`
             : "";
         return `
             <tr data-formula="${safe}" data-key="${safeKey}">
-                <td><input type="text" class="sqd-formula-cell-input" value="${safe}"></td>
-                <td><input type="text" class="sqd-label-cell-input" value="${safeLabel}"></td>
-                <td class="sqd-checkbox-cell"><input type="checkbox" name="${safeKey}" ${checked}></td>
-                <td class="sqd-delete-cell">${deleteBtn}</td>
+                <td><input type="text" class="sdb-formula-cell-input" value="${safe}"></td>
+                <td><input type="text" class="sdb-label-cell-input" value="${safeLabel}"></td>
+                <td class="sdb-checkbox-cell"><input type="checkbox" name="${safeKey}" ${checked}></td>
+                <td class="sdb-delete-cell">${deleteBtn}</td>
             </tr>
         `;
     }
@@ -248,30 +248,30 @@ async function openConfig(diceBar) {
     function wireLayoutTab($html) {
         let dragIndex = -1;
 
-        $html.on("dragstart", ".sqd-layout-tile", (e) => {
+        $html.on("dragstart", ".sdb-layout-tile", (e) => {
             dragIndex = parseInt($(e.currentTarget).data("index"));
             e.originalEvent.dataTransfer.effectAllowed = "move";
-            setTimeout(() => $(e.currentTarget).addClass("sqd-dragging"), 0);
+            setTimeout(() => $(e.currentTarget).addClass("sdb-dragging"), 0);
         });
 
-        $html.on("dragend", ".sqd-layout-tile", () => {
-            $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-dragging sqd-slot-over");
+        $html.on("dragend", ".sdb-layout-tile", () => {
+            $html.find(".sdb-layout-tile, .sdb-layout-slot").removeClass("sdb-dragging sdb-slot-over");
             dragIndex = -1;
         });
 
-        $html.on("dragover", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+        $html.on("dragover", ".sdb-layout-tile, .sdb-layout-slot", (e) => {
             const idx = parseInt($(e.currentTarget).data("index"));
             if (dragIndex === -1 || idx === dragIndex) return;
             e.preventDefault();
-            $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-slot-over");
-            $(e.currentTarget).addClass("sqd-slot-over");
+            $html.find(".sdb-layout-tile, .sdb-layout-slot").removeClass("sdb-slot-over");
+            $(e.currentTarget).addClass("sdb-slot-over");
         });
 
-        $html.on("dragleave", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
-            $(e.currentTarget).removeClass("sqd-slot-over");
+        $html.on("dragleave", ".sdb-layout-tile, .sdb-layout-slot", (e) => {
+            $(e.currentTarget).removeClass("sdb-slot-over");
         });
 
-        $html.on("drop", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+        $html.on("drop", ".sdb-layout-tile, .sdb-layout-slot", (e) => {
             e.preventDefault();
             const tgtIdx = parseInt($(e.currentTarget).data("index"));
             const srcIdx = dragIndex;
@@ -288,7 +288,7 @@ async function openConfig(diceBar) {
             renderLayoutEditor($html, pendingGrid, pendingCustom);
         });
 
-        $html.on("change", ".sqd-rows-input", (e) => {
+        $html.on("change", ".sdb-rows-input", (e) => {
             const flat = pendingGrid.flat();
             let n = parseInt(e.target.value);
             if (isNaN(n) || n < 1) n = 1;
@@ -300,7 +300,7 @@ async function openConfig(diceBar) {
     }
 
     function wireResetTab($html) {
-        $html.on("click", ".sqd-reset-position-btn", () => {
+        $html.on("click", ".sdb-reset-position-btn", () => {
             if (!pendingResetPosition) {
                 originalPosition = {
                     left: parseInt(diceBar.css("left")),
@@ -311,13 +311,13 @@ async function openConfig(diceBar) {
             applyBarPosition(diceBar, null);
         });
 
-        $html.on("click", ".sqd-clear-dice-btn", () => {
+        $html.on("click", ".sdb-clear-dice-btn", () => {
             pendingResetDice = true;
             pendingCustom.splice(0);
             pendingGrid.splice(0, pendingGrid.length, []);
             $html.find("tbody tr").remove();
 
-            if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
+            if (!$html.find("[data-panel='layout']").hasClass("sdb-tab-panel-hidden")) {
                 renderLayoutEditor($html, pendingGrid, pendingCustom);
             }
 
@@ -326,7 +326,7 @@ async function openConfig(diceBar) {
     }
 
     function wireDiceTab($html) {
-        $html.on("click", ".sqd-delete-btn", (e) => {
+        $html.on("click", ".sdb-delete-btn", (e) => {
             const row       = $(e.currentTarget).closest("tr");
             const key       = row.data("key");
             const customIdx = pendingCustom.findIndex(d => dieKey(d.formula, d.label) === key);
@@ -344,9 +344,9 @@ async function openConfig(diceBar) {
             row.remove();
         });
 
-        $html.on("click", ".sqd-add-btn", () => {
-            const input      = $html.find(".sqd-formula-input");
-            const labelInput = $html.find(".sqd-label-input");
+        $html.on("click", ".sdb-add-btn", () => {
+            const input      = $html.find(".sdb-formula-input");
+            const labelInput = $html.find(".sdb-label-input");
             const raw   = input.val().trim().toLowerCase().replace(/\s+/g, "");
             const label = labelInput.val().trim();
 
@@ -369,13 +369,13 @@ async function openConfig(diceBar) {
             labelInput.val("");
         });
 
-        $html.on("keydown", ".sqd-formula-input, .sqd-label-input", (e) => {
-            if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
+        $html.on("keydown", ".sdb-formula-input, .sdb-label-input", (e) => {
+            if (e.key === "Enter") $html.find(".sdb-add-btn").trigger("click");
         });
     }
 
     function wireExtraTab($html) {
-        $html.on("change", ".sqd-hide-bar-checkbox", (e) => {
+        $html.on("change", ".sdb-hide-bar-checkbox", (e) => {
             if (e.target.checked) diceBar.hide();
             else                  diceBar.show();
         });
@@ -386,14 +386,14 @@ async function openConfig(diceBar) {
     const flatKeys  = pendingGrid.flat().filter(k => allKeys.has(k));
 
     const content = `
-        <div class="sqd-tabs">
-            <button type="button" class="sqd-tab sqd-tab-active" data-tab="dice">Dice</button>
-            <button type="button" class="sqd-tab" data-tab="layout">Layout</button>
-            <button type="button" class="sqd-tab" data-tab="reset">Reset</button>
-            <button type="button" class="sqd-tab" data-tab="extra">Extra</button>
+        <div class="sdb-tabs">
+            <button type="button" class="sdb-tab sdb-tab-active" data-tab="dice">Dice</button>
+            <button type="button" class="sdb-tab" data-tab="layout">Layout</button>
+            <button type="button" class="sdb-tab" data-tab="reset">Reset</button>
+            <button type="button" class="sdb-tab" data-tab="extra">Extra</button>
         </div>
-        <div class="sqd-tab-panel" data-panel="dice">
-            <table class="sqd-config-table">
+        <div class="sdb-tab-panel" data-panel="dice">
+            <table class="sdb-config-table">
                 <thead>
                     <tr><th>Formula</th><th>Label</th><th>Visible</th><th></th></tr>
                 </thead>
@@ -404,17 +404,17 @@ async function openConfig(diceBar) {
                     }).join("")}
                 </tbody>
             </table>
-            <div class="sqd-add-row">
-                <input type="text" class="sqd-formula-input" placeholder="Formula e.g. 1d20, 2d6+3">
-                <input type="text" class="sqd-label-input" placeholder="Label (optional)">
-                <button type="button" class="sqd-add-btn">Add</button>
+            <div class="sdb-add-row">
+                <input type="text" class="sdb-formula-input" placeholder="Formula e.g. 1d20, 2d6+3">
+                <input type="text" class="sdb-label-input" placeholder="Label (optional)">
+                <button type="button" class="sdb-add-btn">Add</button>
             </div>
         </div>
-        <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="layout"></div>
-        <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="extra">
-            <div class="sqd-extra-panel">
-                <label class="sqd-extra-item">
-                    <input type="checkbox" class="sqd-hide-bar-checkbox"${barHidden ? " checked" : ""}>
+        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="layout"></div>
+        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="extra">
+            <div class="sdb-extra-panel">
+                <label class="sdb-extra-item">
+                    <input type="checkbox" class="sdb-hide-bar-checkbox"${barHidden ? " checked" : ""}>
                     <div>
                         <strong>Hide Button Bar</strong>
                         <p>Hide the button bar from the screen.</p>
@@ -423,21 +423,21 @@ async function openConfig(diceBar) {
                 </label>
             </div>
         </div>
-        <div class="sqd-tab-panel sqd-tab-panel-hidden" data-panel="reset">
-            <div class="sqd-reset-panel">
-                <div class="sqd-reset-item">
+        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="reset">
+            <div class="sdb-reset-panel">
+                <div class="sdb-reset-item">
                     <div>
                         <strong>Reset Bar Position</strong>
                         <p>Move the button bar to the default position at the top center of the screen.</p>
                     </div>
-                    <button type="button" class="sqd-reset-position-btn">Reset Position</button>
+                    <button type="button" class="sdb-reset-position-btn">Reset Position</button>
                 </div>
-                <div class="sqd-reset-item">
+                <div class="sdb-reset-item">
                     <div>
                         <strong>Clear All Dice</strong>
                         <p>Remove every die from the bar.</p>
                     </div>
-                    <button type="button" class="sqd-clear-dice-btn">Clear Dice</button>
+                    <button type="button" class="sdb-clear-dice-btn">Clear Dice</button>
                 </div>
             </div>
         </div>
@@ -459,8 +459,8 @@ async function openConfig(diceBar) {
                     $html.find("tbody tr").each(function () {
                         const $row      = $(this);
                         const oldKey    = $row.data("key");
-                        const newRaw    = $row.find(".sqd-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
-                        const newLabel  = $row.find(".sqd-label-cell-input").val().trim();
+                        const newRaw    = $row.find(".sdb-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
+                        const newLabel  = $row.find(".sdb-label-cell-input").val().trim();
                         const checked   = $row.find("input[type=checkbox]").prop("checked");
                         const formulaOk = isValidFormula(newRaw);
                         const newKey    = dieKey(newRaw, newLabel);
@@ -510,7 +510,7 @@ async function openConfig(diceBar) {
                     if (pendingResetPosition) {
                         await game.user.unsetFlag(MODULE_ID, "barPosition");
                     }
-                    const newBarHidden = $html.find(".sqd-hide-bar-checkbox").prop("checked");
+                    const newBarHidden = $html.find(".sdb-hide-bar-checkbox").prop("checked");
                     await game.settings.set(MODULE_ID, "barHidden", newBarHidden);
                     if (newBarHidden) diceBar.hide();
                     else              diceBar.show();
@@ -522,12 +522,12 @@ async function openConfig(diceBar) {
         render: (event, dialog) => {
             const $html = $(dialog.element);
 
-            $html.on("click", ".sqd-tab", (e) => {
+            $html.on("click", ".sdb-tab", (e) => {
                 const tab = e.currentTarget.dataset.tab;
-                $html.find(".sqd-tab").removeClass("sqd-tab-active");
-                $(e.currentTarget).addClass("sqd-tab-active");
-                $html.find(".sqd-tab-panel").addClass("sqd-tab-panel-hidden");
-                $html.find(`[data-panel="${tab}"]`).removeClass("sqd-tab-panel-hidden");
+                $html.find(".sdb-tab").removeClass("sdb-tab-active");
+                $(e.currentTarget).addClass("sdb-tab-active");
+                $html.find(".sdb-tab-panel").addClass("sdb-tab-panel-hidden");
+                $html.find(`[data-panel="${tab}"]`).removeClass("sdb-tab-panel-hidden");
                 if (tab === "layout") renderLayoutEditor($html, pendingGrid, pendingCustom);
             });
 
@@ -556,24 +556,24 @@ Hooks.once("init", () => {
         type: Boolean,
         default: false,
         onChange: (value) => {
-            if (value) $(".sqd-dice-bar").hide();
-            else       $(".sqd-dice-bar").show();
+            if (value) $(".sdb-dice-bar").hide();
+            else       $(".sdb-dice-bar").show();
         },
     });
 });
 
 Hooks.once("ready", () => {
-    const diceBar = $(`<div class="sqd-dice-bar">
-        <div class="sqd-bar-controls">
-            <span class="sqd-bar-handle" title="Drag to move bar">&#8801;</span>
-            <button class="sqd-mode-btn sqd-mode-normal" data-mode="normal" title="Roll mode: click to cycle Normal / Advantage / Disadvantage">Normal</button>
-            <button class="sqd-config-btn" title="Configure Dice">&#9881;</button>
+    const diceBar = $(`<div class="sdb-dice-bar">
+        <div class="sdb-bar-controls">
+            <span class="sdb-bar-handle" title="Drag to move bar">&#8801;</span>
+            <button class="sdb-mode-btn sdb-mode-normal" data-mode="normal" title="Roll mode: click to cycle Normal / Advantage / Disadvantage">Normal</button>
+            <button class="sdb-config-btn" title="Configure Dice">&#9881;</button>
         </div>
-        <div class="sqd-dice-grid"></div>
+        <div class="sdb-dice-grid"></div>
     </div>`);
 
     diceBar.data("rollMode", "normal");
-    const modeBtn = diceBar.find(".sqd-mode-btn");
+    const modeBtn = diceBar.find(".sdb-mode-btn");
     modeBtn.on("click", () => {
         const current = diceBar.data("rollMode") || "normal";
         const next = ROLL_MODES[(ROLL_MODES.indexOf(current) + 1) % ROLL_MODES.length];
@@ -581,8 +581,8 @@ Hooks.once("ready", () => {
         modeBtn
             .text(MODE_LABELS[next])
             .attr("data-mode", next)
-            .removeClass("sqd-mode-normal sqd-mode-advantage sqd-mode-disadvantage")
-            .addClass(`sqd-mode-${next}`);
+            .removeClass("sdb-mode-normal sdb-mode-advantage sdb-mode-disadvantage")
+            .addClass(`sdb-mode-${next}`);
     });
 
     $("body").append(diceBar);
@@ -596,7 +596,7 @@ Hooks.once("ready", () => {
     });
 
     let configOpen = false;
-    diceBar.find(".sqd-config-btn").click(async () => {
+    diceBar.find(".sdb-config-btn").click(async () => {
         if (configOpen) return;
         configOpen = true;
         try {

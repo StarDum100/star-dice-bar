@@ -69,9 +69,9 @@ function setupBarWithDice(extra = {}) {
 }
 
 
-// ── Star Quick Dice (integration) ────────────────────────────────────────
+// ── Star Dice Bar (integration) ────────────────────────────────────────
 
-describe("Star Quick Dice", () => {
+describe("Star Dice Bar", () => {
   describe("init hook", () => {
     it("registers an init hook", () => {
       expect(global.Hooks.once).toHaveBeenCalledWith("init", expect.any(Function));
@@ -81,7 +81,7 @@ describe("Star Quick Dice", () => {
       global.game.settings.register.mockClear();
       hookCallbacks["init"]();
       expect(global.game.settings.register).toHaveBeenCalledWith(
-        "star-quick-dice",
+        "star-dice-bar",
         "barHidden",
         expect.objectContaining({ scope: "client", config: true, type: Boolean, default: false })
       );
@@ -99,13 +99,13 @@ describe("Star Quick Dice", () => {
       it("hides the bar when called with true", () => {
         setupBar();
         onChange(true);
-        expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
+        expect(document.querySelector(".sdb-dice-bar").style.display).toBe("none");
       });
 
       it("shows the bar when called with false", () => {
         setupBar({ barHidden: true });
         onChange(false);
-        expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
+        expect(document.querySelector(".sdb-dice-bar").style.display).not.toBe("none");
       });
     });
   });
@@ -116,7 +116,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("appends the dice bar to body", () => {
-      expect(document.querySelector(".sqd-dice-bar")).not.toBeNull();
+      expect(document.querySelector(".sdb-dice-bar")).not.toBeNull();
     });
 
     it("renders no dice buttons by default (empty bar)", () => {
@@ -126,23 +126,23 @@ describe("Star Quick Dice", () => {
 
     it("shows the empty-state hint when there are no dice", () => {
       setupBar();
-      expect(document.querySelector(".sqd-empty-hint")).not.toBeNull();
+      expect(document.querySelector(".sdb-empty-hint")).not.toBeNull();
     });
 
     it("hides the empty-state hint once dice exist", () => {
-      expect(document.querySelector(".sqd-empty-hint")).toBeNull();
+      expect(document.querySelector(".sdb-empty-hint")).toBeNull();
     });
 
     it("renders a config button", () => {
-      expect(document.querySelector(".sqd-config-btn")).not.toBeNull();
+      expect(document.querySelector(".sdb-config-btn")).not.toBeNull();
     });
 
     it("renders a drag handle", () => {
-      expect(document.querySelector(".sqd-bar-handle")).not.toBeNull();
+      expect(document.querySelector(".sdb-bar-handle")).not.toBeNull();
     });
 
-    it("buttons live inside .sqd-dice-grid", () => {
-      expect(document.querySelector(".sqd-dice-grid button[data-roll]")).not.toBeNull();
+    it("buttons live inside .sdb-dice-grid", () => {
+      expect(document.querySelector(".sdb-dice-grid button[data-roll]")).not.toBeNull();
     });
 
     it.each([
@@ -170,7 +170,7 @@ describe("Star Quick Dice", () => {
 
       it("supports multiple rows from barGrid", () => {
         setupBarWithDice({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
-        expect(document.querySelectorAll(".sqd-bar-row")).toHaveLength(2);
+        expect(document.querySelectorAll(".sdb-bar-row")).toHaveLength(2);
         expect(document.querySelectorAll("button[data-roll]")).toHaveLength(4);
       });
 
@@ -180,14 +180,14 @@ describe("Star Quick Dice", () => {
         expect(document.querySelectorAll("button[data-roll]")).toHaveLength(1);
       });
 
-      it("adds sqd-bar-multirow class when barGrid has multiple rows", () => {
+      it("adds sdb-bar-multirow class when barGrid has multiple rows", () => {
         setupBarWithDice({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
-        expect(document.querySelector(".sqd-dice-bar").classList.contains("sqd-bar-multirow")).toBe(true);
+        expect(document.querySelector(".sdb-dice-bar").classList.contains("sdb-bar-multirow")).toBe(true);
       });
 
-      it("does not add sqd-bar-multirow class for a single-row barGrid", () => {
+      it("does not add sdb-bar-multirow class for a single-row barGrid", () => {
         setupBarWithDice();
-        expect(document.querySelector(".sqd-dice-bar").classList.contains("sqd-bar-multirow")).toBe(false);
+        expect(document.querySelector(".sdb-dice-bar").classList.contains("sdb-bar-multirow")).toBe(false);
       });
     });
 
@@ -255,14 +255,14 @@ describe("Star Quick Dice", () => {
   describe("bar positioning", () => {
     it("applies saved position from barPosition flag", () => {
       setupBar({ barPosition: { left: 200, top: 150 } });
-      const bar = document.querySelector(".sqd-dice-bar");
+      const bar = document.querySelector(".sdb-dice-bar");
       expect(bar.style.left).toBe("200px");
       expect(bar.style.top).toBe("150px");
     });
 
     it("applies a default top of 10px when no barPosition flag is set", () => {
       setupBar();
-      expect(document.querySelector(".sqd-dice-bar").style.top).toBe("10px");
+      expect(document.querySelector(".sdb-dice-bar").style.top).toBe("10px");
     });
 
     it("defers position calculation to requestAnimationFrame so outerWidth is accurate", () => {
@@ -271,7 +271,7 @@ describe("Star Quick Dice", () => {
       try {
         setupBar();
         // RAF scheduled but not yet fired — position not yet applied
-        const bar = document.querySelector(".sqd-dice-bar");
+        const bar = document.querySelector(".sdb-dice-bar");
         expect(bar.style.left).toBe("");
         expect(bar.style.top).toBe("");
         // After RAF fires, default position is applied
@@ -288,10 +288,10 @@ describe("Star Quick Dice", () => {
       try {
         setupBar({ barHidden: true });
         // Bar should still be visible before RAF fires (so layout can be measured)
-        expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
+        expect(document.querySelector(".sdb-dice-bar").style.display).not.toBe("none");
         rafCb();
         // After RAF: position applied and bar hidden
-        expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
+        expect(document.querySelector(".sdb-dice-bar").style.display).toBe("none");
       } finally {
         global.requestAnimationFrame = cb => cb();
       }
@@ -303,7 +303,7 @@ describe("Star Quick Dice", () => {
       let diceCountAtPositionCalc = null;
       const original = $.fn.outerWidth;
       $.fn.outerWidth = function () {
-        if (diceCountAtPositionCalc === null && this.hasClass && this.hasClass("sqd-dice-bar")) {
+        if (diceCountAtPositionCalc === null && this.hasClass && this.hasClass("sdb-dice-bar")) {
           diceCountAtPositionCalc = document.querySelectorAll("button[data-roll]").length;
         }
         return original.apply(this, arguments);
@@ -319,12 +319,12 @@ describe("Star Quick Dice", () => {
     it("saves position to flag on drag end", () => {
       setupBar();
       global.game.user.setFlag.mockClear();
-      const handle = document.querySelector(".sqd-bar-handle");
+      const handle = document.querySelector(".sdb-bar-handle");
       $(handle).trigger({ type: "mousedown", clientX: 50, clientY: 50, preventDefault: () => {} });
-      $(document).trigger({ type: "mousemove.sqd-drag", clientX: 80, clientY: 70 });
-      $(document).trigger("mouseup.sqd-drag");
+      $(document).trigger({ type: "mousemove.sdb-drag", clientX: 80, clientY: 70 });
+      $(document).trigger("mouseup.sdb-drag");
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "barPosition",
+        "star-dice-bar", "barPosition",
         expect.objectContaining({ left: expect.any(Number), top: expect.any(Number) })
       );
     });
@@ -418,15 +418,15 @@ describe("Star Quick Dice", () => {
       beforeEach(() => {
         global.ui.notifications.warn.mockClear();
         setupBar();
-        document.querySelector(".sqd-config-btn").click();
+        document.querySelector(".sdb-config-btn").click();
         ({ html } = openDialogHtml());
       });
 
       it.each(LARGE_FORMULAS)(
         "accepts a formula with %s without warning",
         (_, formula) => {
-          html.find(".sqd-formula-input").val(formula);
-          html.find(".sqd-add-btn").trigger("click");
+          html.find(".sdb-formula-input").val(formula);
+          html.find(".sdb-add-btn").trigger("click");
           expect(global.ui.notifications.warn).not.toHaveBeenCalled();
         }
       );
@@ -434,8 +434,8 @@ describe("Star Quick Dice", () => {
       it.each(LARGE_FORMULAS)(
         "adds the row to the dice table when formula has %s",
         (_, formula) => {
-          html.find(".sqd-formula-input").val(formula);
-          html.find(".sqd-add-btn").trigger("click");
+          html.find(".sdb-formula-input").val(formula);
+          html.find(".sdb-add-btn").trigger("click");
           expect(html.find(`tr[data-formula="${formula}"]`).length).toBe(1);
         }
       );
@@ -460,68 +460,68 @@ describe("Star Quick Dice", () => {
     beforeEach(() => {
       global.ui.notifications.warn.mockClear();
       setupBarWithDice();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       ({ html } = openDialogHtml());
     });
 
     function attemptAdd(formula) {
-      html.find(".sqd-formula-input").val(formula);
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val(formula);
+      html.find(".sdb-add-btn").trigger("click");
     }
 
     it("warns with the correct message when the formula is empty", () => {
       attemptAdd("");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula has no digits", () => {
       attemptAdd("abc");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula is missing the die size", () => {
       attemptAdd("2d");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula is missing the multiplier", () => {
       attemptAdd("d6");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula contains special characters", () => {
       attemptAdd("2d!!");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula contains a script injection attempt", () => {
       attemptAdd("<script>alert(1)</script>");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula has a negative multiplier", () => {
       attemptAdd("-1d6");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula has a negative die size", () => {
       attemptAdd("1d-6");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
+        "Star Dice Bar: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
@@ -534,7 +534,7 @@ describe("Star Quick Dice", () => {
     it("warns when a valid formula already exists", () => {
       attemptAdd("1d20");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: 1d20 already exists."
+        "Star Dice Bar: 1d20 already exists."
       );
     });
 
@@ -548,7 +548,7 @@ describe("Star Quick Dice", () => {
     it("does not execute a script tag injected as a saved formula", () => {
       window.__xssDialogScript = undefined;
       setupBar({ customDice: [{ formula: '<script>window.__xssDialogScript = true</script>', label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       expect(window.__xssDialogScript).toBeUndefined();
     });
@@ -556,7 +556,7 @@ describe("Star Quick Dice", () => {
     it("does not execute an event handler injected as a saved formula", () => {
       window.__xssDialogAttr = undefined;
       setupBar({ customDice: [{ formula: '1d6" onmouseover="window.__xssDialogAttr=true', label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       expect(window.__xssDialogAttr).toBeUndefined();
     });
@@ -564,16 +564,16 @@ describe("Star Quick Dice", () => {
     it("does not execute an img onerror payload injected as a saved formula", () => {
       window.__xssDialogImg = undefined;
       setupBar({ customDice: [{ formula: '<img src=x onerror="window.__xssDialogImg=true">', label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       expect(window.__xssDialogImg).toBeUndefined();
     });
 
     it("displays a formula containing HTML characters as literal text in the table", () => {
       setupBar({ customDice: [{ formula: '<b>1d6</b>', label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      const input = html.find("tbody .sqd-formula-cell-input").filter((_, el) => el.value === "<b>1d6</b>");
+      const input = html.find("tbody .sdb-formula-cell-input").filter((_, el) => el.value === "<b>1d6</b>");
       expect(input.length).toBe(1);
     });
   });
@@ -582,18 +582,18 @@ describe("Star Quick Dice", () => {
     let html;
     beforeEach(() => {
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       ({ html } = openDialogHtml());
     });
 
     function visiblePanel() {
       return ["dice", "layout", "reset", "extra"].find(
-        name => !html.find(`[data-panel="${name}"]`).hasClass("sqd-tab-panel-hidden")
+        name => !html.find(`[data-panel="${name}"]`).hasClass("sdb-tab-panel-hidden")
       );
     }
 
     function activeTab() {
-      return html.find(".sqd-tab.sqd-tab-active").data("tab");
+      return html.find(".sdb-tab.sdb-tab-active").data("tab");
     }
 
     describe("initial state", () => {
@@ -602,9 +602,9 @@ describe("Star Quick Dice", () => {
       });
 
       it("layout, reset, and extra tabs are not active on open", () => {
-        expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='extra']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='layout']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='reset']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='extra']").hasClass("sdb-tab-active")).toBe(false);
       });
 
       it("only the dice panel is visible on open", () => {
@@ -616,13 +616,13 @@ describe("Star Quick Dice", () => {
       beforeEach(() => { html.find("[data-tab='layout']").trigger("click"); });
 
       it("shows the layout panel", () => {
-        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+        expect(html.find("[data-panel='layout']").hasClass("sdb-tab-panel-hidden")).toBe(false);
       });
 
       it("hides the dice, reset, and extra panels", () => {
-        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-        expect(html.find("[data-panel='extra']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='dice']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='reset']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='extra']").hasClass("sdb-tab-panel-hidden")).toBe(true);
       });
 
       it("marks the layout tab active", () => {
@@ -630,9 +630,9 @@ describe("Star Quick Dice", () => {
       });
 
       it("removes active class from dice, reset, and extra tabs", () => {
-        expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='extra']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='dice']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='reset']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='extra']").hasClass("sdb-tab-active")).toBe(false);
       });
     });
 
@@ -640,13 +640,13 @@ describe("Star Quick Dice", () => {
       beforeEach(() => { html.find("[data-tab='reset']").trigger("click"); });
 
       it("shows the reset panel", () => {
-        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+        expect(html.find("[data-panel='reset']").hasClass("sdb-tab-panel-hidden")).toBe(false);
       });
 
       it("hides the dice, layout, and extra panels", () => {
-        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-        expect(html.find("[data-panel='extra']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='dice']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='layout']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='extra']").hasClass("sdb-tab-panel-hidden")).toBe(true);
       });
 
       it("marks the reset tab active", () => {
@@ -654,9 +654,9 @@ describe("Star Quick Dice", () => {
       });
 
       it("removes active class from dice, layout, and extra tabs", () => {
-        expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='extra']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='dice']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='layout']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='extra']").hasClass("sdb-tab-active")).toBe(false);
       });
     });
 
@@ -667,12 +667,12 @@ describe("Star Quick Dice", () => {
       });
 
       it("shows the dice panel", () => {
-        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+        expect(html.find("[data-panel='dice']").hasClass("sdb-tab-panel-hidden")).toBe(false);
       });
 
       it("hides the layout and reset panels", () => {
-        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='layout']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='reset']").hasClass("sdb-tab-panel-hidden")).toBe(true);
       });
 
       it("marks the dice tab active", () => {
@@ -698,7 +698,7 @@ describe("Star Quick Dice", () => {
       for (const tab of ["layout", "reset", "extra", "dice", "layout"]) {
         html.find(`[data-tab='${tab}']`).trigger("click");
         const visibleCount = ["dice", "layout", "reset", "extra"].filter(
-          name => !html.find(`[data-panel="${name}"]`).hasClass("sqd-tab-panel-hidden")
+          name => !html.find(`[data-panel="${name}"]`).hasClass("sdb-tab-panel-hidden")
         ).length;
         expect(visibleCount).toBe(1);
       }
@@ -708,13 +708,13 @@ describe("Star Quick Dice", () => {
       beforeEach(() => { html.find("[data-tab='extra']").trigger("click"); });
 
       it("shows the extra panel", () => {
-        expect(html.find("[data-panel='extra']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+        expect(html.find("[data-panel='extra']").hasClass("sdb-tab-panel-hidden")).toBe(false);
       });
 
       it("hides the dice, layout, and reset panels", () => {
-        expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-        expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-        expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='dice']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='layout']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+        expect(html.find("[data-panel='reset']").hasClass("sdb-tab-panel-hidden")).toBe(true);
       });
 
       it("marks the extra tab active", () => {
@@ -722,9 +722,9 @@ describe("Star Quick Dice", () => {
       });
 
       it("removes active class from dice, layout, and reset tabs", () => {
-        expect(html.find("[data-tab='dice']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='layout']").hasClass("sqd-tab-active")).toBe(false);
-        expect(html.find("[data-tab='reset']").hasClass("sqd-tab-active")).toBe(false);
+        expect(html.find("[data-tab='dice']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='layout']").hasClass("sdb-tab-active")).toBe(false);
+        expect(html.find("[data-tab='reset']").hasClass("sdb-tab-active")).toBe(false);
       });
     });
   });
@@ -732,7 +732,7 @@ describe("Star Quick Dice", () => {
   describe("config dialog — extra tab", () => {
     function openExtra(flagOverrides = {}) {
       setupBar(flagOverrides);
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
       html.find("[data-tab='extra']").trigger("click");
       return html;
@@ -740,95 +740,95 @@ describe("Star Quick Dice", () => {
 
     it("checkbox is unchecked when barHidden flag is not set", () => {
       const html = openExtra();
-      expect(html.find(".sqd-hide-bar-checkbox").prop("checked")).toBe(false);
+      expect(html.find(".sdb-hide-bar-checkbox").prop("checked")).toBe(false);
     });
 
     it("checkbox is checked when barHidden flag is true", () => {
       const html = openExtra({ barHidden: true });
-      expect(html.find(".sqd-hide-bar-checkbox").prop("checked")).toBe(true);
+      expect(html.find(".sdb-hide-bar-checkbox").prop("checked")).toBe(true);
     });
 
     it("checking the checkbox does not immediately save the setting", () => {
       const html = openExtra();
       global.game.settings.set.mockClear();
-      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
+      html.find(".sdb-hide-bar-checkbox").prop("checked", true).trigger("change");
       expect(global.game.settings.set).not.toHaveBeenCalled();
     });
 
     it("checking the checkbox hides the bar immediately for preview", () => {
       const html = openExtra();
-      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
-      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
+      html.find(".sdb-hide-bar-checkbox").prop("checked", true).trigger("change");
+      expect(document.querySelector(".sdb-dice-bar").style.display).toBe("none");
     });
 
     it("unchecking the checkbox shows the bar immediately for preview", () => {
       const html = openExtra({ barHidden: true });
-      html.find(".sqd-hide-bar-checkbox").prop("checked", false).trigger("change");
-      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
+      html.find(".sdb-hide-bar-checkbox").prop("checked", false).trigger("change");
+      expect(document.querySelector(".sdb-dice-bar").style.display).not.toBe("none");
     });
 
     it("Cancel restores the bar to visible when checkbox was checked but not saved", async () => {
       const html = openExtra();
-      html.find(".sqd-hide-bar-checkbox").prop("checked", true).trigger("change");
-      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
+      html.find(".sdb-hide-bar-checkbox").prop("checked", true).trigger("change");
+      expect(document.querySelector(".sdb-dice-bar").style.display).toBe("none");
       global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
-      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
+      expect(document.querySelector(".sdb-dice-bar").style.display).not.toBe("none");
     });
 
     it("Save saves barHidden as true when checkbox is checked", async () => {
       const html = openExtra();
-      html.find(".sqd-hide-bar-checkbox").prop("checked", true);
+      html.find(".sdb-hide-bar-checkbox").prop("checked", true);
       global.game.settings.set.mockClear();
       const options = global.foundry.applications.api.DialogV2.__lastOptions;
       const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", true);
+      expect(global.game.settings.set).toHaveBeenCalledWith("star-dice-bar", "barHidden", true);
     });
 
     it("Save saves barHidden as false when checkbox is unchecked", async () => {
       const html = openExtra({ barHidden: true });
-      html.find(".sqd-hide-bar-checkbox").prop("checked", false);
+      html.find(".sdb-hide-bar-checkbox").prop("checked", false);
       global.game.settings.set.mockClear();
       const options = global.foundry.applications.api.DialogV2.__lastOptions;
       const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(global.game.settings.set).toHaveBeenCalledWith("star-quick-dice", "barHidden", false);
+      expect(global.game.settings.set).toHaveBeenCalledWith("star-dice-bar", "barHidden", false);
     });
 
     it("Save hides the bar when checkbox is checked", async () => {
       const html = openExtra();
-      html.find(".sqd-hide-bar-checkbox").prop("checked", true);
+      html.find(".sdb-hide-bar-checkbox").prop("checked", true);
       const options = global.foundry.applications.api.DialogV2.__lastOptions;
       const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
+      expect(document.querySelector(".sdb-dice-bar").style.display).toBe("none");
     });
 
     it("Save shows the bar when checkbox is unchecked", async () => {
       setupBar({ barHidden: true });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
       html.find("[data-tab='extra']").trigger("click");
-      html.find(".sqd-hide-bar-checkbox").prop("checked", false);
+      html.find(".sdb-hide-bar-checkbox").prop("checked", false);
       const options = global.foundry.applications.api.DialogV2.__lastOptions;
       const container = global.foundry.applications.api.DialogV2.__lastInstance.element;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
+      expect(document.querySelector(".sdb-dice-bar").style.display).not.toBe("none");
     });
 
     it("hides the bar on load when barHidden flag is true", () => {
       setupBar({ barHidden: true });
-      expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
+      expect(document.querySelector(".sdb-dice-bar").style.display).toBe("none");
     });
 
     it("shows the bar on load when barHidden flag is not set", () => {
       setupBar();
-      expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
+      expect(document.querySelector(".sdb-dice-bar").style.display).not.toBe("none");
     });
 
   });
@@ -836,7 +836,7 @@ describe("Star Quick Dice", () => {
   describe("config dialog — layout tab", () => {
     function openLayout(flagOverrides = {}) {
       setupBar({ customDice: DEFAULT_DICE, ...flagOverrides });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
       html.find("[data-tab='layout']").trigger("click");
       return html;
@@ -844,81 +844,81 @@ describe("Star Quick Dice", () => {
 
     it("shows the dice panel by default and hides layout and reset", () => {
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      expect(html.find("[data-panel='dice']").hasClass("sqd-tab-panel-hidden")).toBe(false);
-      expect(html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")).toBe(true);
-      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(true);
+      expect(html.find("[data-panel='dice']").hasClass("sdb-tab-panel-hidden")).toBe(false);
+      expect(html.find("[data-panel='layout']").hasClass("sdb-tab-panel-hidden")).toBe(true);
+      expect(html.find("[data-panel='reset']").hasClass("sdb-tab-panel-hidden")).toBe(true);
     });
 
     it("renders a tile for each die on the layout tab", () => {
       const html = openLayout();
-      expect(html.find(".sqd-layout-tile")).toHaveLength(7);
+      expect(html.find(".sdb-layout-tile")).toHaveLength(7);
     });
 
     it("renders the correct label on each layout tile", () => {
       const html = openLayout();
-      const labels = [...html.find(".sqd-layout-tile")].map(el => el.textContent.trim());
+      const labels = [...html.find(".sdb-layout-tile")].map(el => el.textContent.trim());
       expect(labels).toContain("1d4");
       expect(labels).toContain("1d20");
     });
 
     it("renders a rows input showing the current row count", () => {
       const html = openLayout({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
-      expect(html.find(".sqd-rows-input").val()).toBe("2");
+      expect(html.find(".sdb-rows-input").val()).toBe("2");
     });
 
     it("renders multiple rows when barGrid has multiple rows", () => {
       const html = openLayout({ barGrid: [["1d4", "1d6"], ["1d8", "1d10"]] });
-      expect(html.find(".sqd-layout-row")).toHaveLength(2);
-      expect(html.find(".sqd-layout-row").eq(0).find(".sqd-layout-tile")).toHaveLength(2);
-      expect(html.find(".sqd-layout-row").eq(1).find(".sqd-layout-tile")).toHaveLength(2);
+      expect(html.find(".sdb-layout-row")).toHaveLength(2);
+      expect(html.find(".sdb-layout-row").eq(0).find(".sdb-layout-tile")).toHaveLength(2);
+      expect(html.find(".sdb-layout-row").eq(1).find(".sdb-layout-tile")).toHaveLength(2);
     });
 
     it("renders empty slots when dice do not fill the grid evenly", () => {
       // 7 dice, 2 rows → 4 cols → 8 slots → 1 empty slot
       const html = openLayout();
-      html.find(".sqd-rows-input").val("2").trigger("change");
-      expect(html.find(".sqd-layout-slot")).toHaveLength(1);
+      html.find(".sdb-rows-input").val("2").trigger("change");
+      expect(html.find(".sdb-layout-slot")).toHaveLength(1);
     });
 
     it("redistributes dice into new rows when the row count changes", () => {
       const html = openLayout();
-      html.find(".sqd-rows-input").val("2").trigger("change");
-      expect(html.find(".sqd-layout-row")).toHaveLength(2);
+      html.find(".sdb-rows-input").val("2").trigger("change");
+      expect(html.find(".sdb-layout-row")).toHaveLength(2);
     });
 
     it("clamps row count to 1 when a value less than 1 is entered", () => {
       const html = openLayout();
-      html.find(".sqd-rows-input").val("0").trigger("change");
-      expect(html.find(".sqd-rows-input").val()).toBe("1");
+      html.find(".sdb-rows-input").val("0").trigger("change");
+      expect(html.find(".sdb-rows-input").val()).toBe("1");
     });
 
     it("clamps row count to number of dice when too large a value is entered", () => {
       const html = openLayout();
-      html.find(".sqd-rows-input").val("99").trigger("change");
-      expect(html.find(".sqd-rows-input").val()).toBe("7");
+      html.find(".sdb-rows-input").val("99").trigger("change");
+      expect(html.find(".sdb-rows-input").val()).toBe("7");
     });
 
     it("clamps row count to 1 when a non-numeric value is entered", () => {
       const html = openLayout();
-      html.find(".sqd-rows-input").val("abc").trigger("change");
-      expect(html.find(".sqd-rows-input").val()).toBe("1");
+      html.find(".sdb-rows-input").val("abc").trigger("change");
+      expect(html.find(".sdb-rows-input").val()).toBe("1");
     });
 
     it("does not execute XSS in the rows input", () => {
       window.__xssRows = undefined;
       const html = openLayout();
-      html.find(".sqd-rows-input").val("<script>window.__xssRows=true</script>").trigger("change");
+      html.find(".sdb-rows-input").val("<script>window.__xssRows=true</script>").trigger("change");
       expect(window.__xssRows).toBeUndefined();
-      expect(html.find(".sqd-rows-input").val()).toBe("1");
+      expect(html.find(".sdb-rows-input").val()).toBe("1");
     });
 
     it("moves a die when dropped onto another slot", () => {
       const html = openLayout();
       // All 7 dice in 1 row; tiles have data-index 0–6
-      const src = html.find(".sqd-layout-tile").eq(0); // d4, index 0
-      const tgt = html.find(".sqd-layout-tile").eq(2); // d8, index 2
+      const src = html.find(".sdb-layout-tile").eq(0); // d4, index 0
+      const tgt = html.find(".sdb-layout-tile").eq(2); // d8, index 2
 
       $(src).trigger({ type: "dragstart", originalEvent: { dataTransfer: { effectAllowed: "" } } });
       $(tgt).trigger({ type: "dragover", preventDefault: () => {} });
@@ -926,15 +926,15 @@ describe("Star Quick Dice", () => {
 
       // d4 removed from 0, adjusted target = 2-1=1, inserted at 1
       // result: d6, d4, d8, d10, d12, d20, d100
-      expect(html.find(".sqd-layout-tile")).toHaveLength(7);
-      const labels = [...html.find(".sqd-layout-tile")].map(el => el.textContent.trim());
+      expect(html.find(".sdb-layout-tile")).toHaveLength(7);
+      const labels = [...html.find(".sdb-layout-tile")].map(el => el.textContent.trim());
       expect(labels[0]).toBe("1d6");
       expect(labels[1]).toBe("1d4");
     });
 
     it("saves barGrid flag on save", async () => {
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { options } = openDialogHtml();
       global.game.user.setFlag.mockClear();
       const container = document.createElement("div");
@@ -942,13 +942,13 @@ describe("Star Quick Dice", () => {
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "barGrid", expect.any(Array)
+        "star-dice-bar", "barGrid", expect.any(Array)
       );
     });
 
     it("save does not store an empty-string key in diceVisibility", async () => {
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { options } = openDialogHtml();
       global.game.user.setFlag.mockClear();
       const container = document.createElement("div");
@@ -966,32 +966,32 @@ describe("Star Quick Dice", () => {
       global.game.user.setFlag.mockClear();
       global.game.user.unsetFlag.mockClear();
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       ({ html } = openDialogHtml());
     });
 
     it("switches to the reset panel when the Reset tab is clicked", () => {
       html.find("[data-tab='reset']").trigger("click");
-      expect(html.find("[data-panel='reset']").hasClass("sqd-tab-panel-hidden")).toBe(false);
+      expect(html.find("[data-panel='reset']").hasClass("sdb-tab-panel-hidden")).toBe(false);
     });
 
     it("reset position button does not immediately save the barPosition flag", () => {
-      html.find(".sqd-reset-position-btn").trigger("click");
-      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "barPosition", expect.anything());
+      html.find(".sdb-reset-position-btn").trigger("click");
+      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-dice-bar", "barPosition", expect.anything());
     });
 
     it("reset position button applies default position immediately for preview", () => {
       setupBar({ barPosition: { left: 200, top: 150 } });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html: localHtml } = openDialogHtml();
-      localHtml.find(".sqd-reset-position-btn").trigger("click");
-      const bar = document.querySelector(".sqd-dice-bar");
+      localHtml.find(".sdb-reset-position-btn").trigger("click");
+      const bar = document.querySelector(".sdb-dice-bar");
       expect(bar.style.left).not.toBe("200px");
       expect(bar.style.top).not.toBe("150px");
     });
 
     it("reset position unsets the barPosition flag when Save is clicked", async () => {
-      html.find(".sqd-reset-position-btn").trigger("click");
+      html.find(".sdb-reset-position-btn").trigger("click");
       global.game.user.setFlag.mockClear();
       global.game.user.unsetFlag.mockClear();
       const container = document.createElement("div");
@@ -999,7 +999,7 @@ describe("Star Quick Dice", () => {
       container.innerHTML = options.content;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-quick-dice", "barPosition");
+      expect(global.game.user.unsetFlag).toHaveBeenCalledWith("star-dice-bar", "barPosition");
     });
 
     it("reset position does not save barPosition flag when Save is clicked without reset", async () => {
@@ -1010,112 +1010,112 @@ describe("Star Quick Dice", () => {
       container.innerHTML = options.content;
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: container });
-      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "barPosition", expect.anything());
-      expect(global.game.user.unsetFlag).not.toHaveBeenCalledWith("star-quick-dice", "barPosition");
+      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-dice-bar", "barPosition", expect.anything());
+      expect(global.game.user.unsetFlag).not.toHaveBeenCalledWith("star-dice-bar", "barPosition");
     });
 
     it("reset position restores original bar position when dialog is closed without Save", async () => {
       setupBar({ barPosition: { left: 200, top: 150 } });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
-      localHtml.find(".sqd-reset-position-btn").trigger("click");
+      localHtml.find(".sdb-reset-position-btn").trigger("click");
       global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
-      expect(document.querySelector(".sqd-dice-bar").style.left).toBe("200px");
-      expect(document.querySelector(".sqd-dice-bar").style.top).toBe("150px");
+      expect(document.querySelector(".sdb-dice-bar").style.left).toBe("200px");
+      expect(document.querySelector(".sdb-dice-bar").style.top).toBe("150px");
     });
 
     it("reset position button does not close the dialog", () => {
-      html.find(".sqd-reset-position-btn").trigger("click");
+      html.find(".sdb-reset-position-btn").trigger("click");
       expect(global.foundry.applications.api.DialogV2.__lastInstance.close).not.toHaveBeenCalled();
     });
 
     it("clear dice button does not immediately write any flags", () => {
-      html.find(".sqd-clear-dice-btn").trigger("click");
+      html.find(".sdb-clear-dice-btn").trigger("click");
       expect(global.game.user.unsetFlag).not.toHaveBeenCalled();
       expect(global.game.user.setFlag).not.toHaveBeenCalled();
     });
 
     it("clear dice button saves an empty bar when Save is clicked", async () => {
       setupBar({ customDice: [{ formula: "1d105", label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { options } = openDialogHtml();
       const instance = global.foundry.applications.api.DialogV2.__lastInstance;
-      $(instance.element).find(".sqd-clear-dice-btn").trigger("click");
+      $(instance.element).find(".sdb-clear-dice-btn").trigger("click");
       global.game.user.setFlag.mockClear();
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: instance.element });
-      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "customDice", []);
-      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "barGrid", [[]]);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-dice-bar", "customDice", []);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-dice-bar", "barGrid", [[]]);
     });
 
     it("clear dice button saves empty diceVisibility when Save is clicked", async () => {
       setupBar({ customDice: [{ formula: "2d6", label: "" }], diceVisibility: { "2d6": false } });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { options } = openDialogHtml();
       const instance = global.foundry.applications.api.DialogV2.__lastInstance;
-      $(instance.element).find(".sqd-clear-dice-btn").trigger("click");
+      $(instance.element).find(".sdb-clear-dice-btn").trigger("click");
       global.game.user.setFlag.mockClear();
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: instance.element });
-      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-quick-dice", "diceVisibility", {});
+      expect(global.game.user.setFlag).toHaveBeenCalledWith("star-dice-bar", "diceVisibility", {});
     });
 
     it("clear dice button empties the bar immediately", () => {
       setupBar({ customDice: [{ formula: "1d105", label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
-      localHtml.find(".sqd-clear-dice-btn").trigger("click");
+      localHtml.find(".sdb-clear-dice-btn").trigger("click");
       expect(document.querySelectorAll("button[data-roll]")).toHaveLength(0);
     });
 
     it("clear dice button shows the empty-state hint on the bar", () => {
       setupBar({ customDice: [{ formula: "1d105", label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
-      localHtml.find(".sqd-clear-dice-btn").trigger("click");
-      expect(document.querySelector(".sqd-empty-hint")).not.toBeNull();
+      localHtml.find(".sdb-clear-dice-btn").trigger("click");
+      expect(document.querySelector(".sdb-empty-hint")).not.toBeNull();
     });
 
     it("clear dice button removes all rows from the dice table", () => {
       setupBar({ customDice: [{ formula: "1d105", label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html: localHtml } = openDialogHtml();
       expect(localHtml.find("tbody tr[data-formula='1d105']").length).toBe(1);
-      localHtml.find(".sqd-clear-dice-btn").trigger("click");
+      localHtml.find(".sdb-clear-dice-btn").trigger("click");
       expect(localHtml.find("tbody tr").length).toBe(0);
     });
 
     it("clear dice button restores original bar dice when dialog is closed without Save", async () => {
       setupBar({ customDice: [{ formula: "1d105", label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
-      localHtml.find(".sqd-clear-dice-btn").trigger("click");
+      localHtml.find(".sdb-clear-dice-btn").trigger("click");
       global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
       expect(document.querySelectorAll("button[data-roll]")).toHaveLength(1);
     });
 
     it("clear dice button does not close the dialog", () => {
-      html.find(".sqd-clear-dice-btn").trigger("click");
+      html.find(".sdb-clear-dice-btn").trigger("click");
       expect(global.foundry.applications.api.DialogV2.__lastInstance.close).not.toHaveBeenCalled();
     });
 
     it("clear dice button empties the layout tab when layout is visible", async () => {
       setupBar({ barGrid: [["1d20"], ["1d4", "1d6"]] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
       html.find("[data-tab='layout']").trigger("click");
-      expect(html.find(".sqd-layout-row")).toHaveLength(2);
+      expect(html.find(".sdb-layout-row")).toHaveLength(2);
 
-      html.find(".sqd-clear-dice-btn").trigger("click");
+      html.find(".sdb-clear-dice-btn").trigger("click");
       await new Promise(r => setTimeout(r, 0));
 
-      expect(html.find(".sqd-layout-tile")).toHaveLength(0);
+      expect(html.find(".sdb-layout-tile")).toHaveLength(0);
     });
   });
 
@@ -1123,18 +1123,18 @@ describe("Star Quick Dice", () => {
     it("does not open a second dialog when config button is clicked while one is already open", () => {
       setupBar();
       global.foundry.applications.api.DialogV2.wait.mockClear();
-      document.querySelector(".sqd-config-btn").click(); // opens dialog (promise pending)
-      document.querySelector(".sqd-config-btn").click(); // should be ignored
+      document.querySelector(".sdb-config-btn").click(); // opens dialog (promise pending)
+      document.querySelector(".sdb-config-btn").click(); // should be ignored
       expect(global.foundry.applications.api.DialogV2.wait).toHaveBeenCalledTimes(1);
     });
 
     it("allows opening a new dialog after the previous one closes", async () => {
       setupBar();
       global.foundry.applications.api.DialogV2.wait.mockClear();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       global.foundry.applications.api.DialogV2.__resolveDialog(null);
       await new Promise(r => setTimeout(r, 0));
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       expect(global.foundry.applications.api.DialogV2.wait).toHaveBeenCalledTimes(2);
     });
   });
@@ -1165,14 +1165,14 @@ describe("Star Quick Dice", () => {
     beforeEach(() => {
       global.ui.notifications.warn.mockClear();
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       ({ html } = openDialogHtml());
     });
 
     function addDie(formula, label) {
-      html.find(".sqd-formula-input").val(formula);
-      if (label !== undefined) html.find(".sqd-label-input").val(label);
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val(formula);
+      if (label !== undefined) html.find(".sdb-label-input").val(label);
+      html.find(".sdb-add-btn").trigger("click");
     }
 
     it("accepts a flat-modifier formula (1d6+2)", () => {
@@ -1213,20 +1213,20 @@ describe("Star Quick Dice", () => {
 
     it("accepts an uppercase D in the add form and stores it lowercase", () => {
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      html.find(".sqd-formula-input").val("1D6");
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val("1D6");
+      html.find(".sdb-add-btn").trigger("click");
       expect(global.ui.notifications.warn).not.toHaveBeenCalled();
       expect(html.find('tr[data-formula="1d6"]').length).toBe(1);
     });
 
     it("normalizes uppercase D across a multi-term formula", () => {
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      html.find(".sqd-formula-input").val("2D6+1D4");
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val("2D6+1D4");
+      html.find(".sdb-add-btn").trigger("click");
       expect(html.find('tr[data-formula="2d6+1d4"]').length).toBe(1);
     });
   });
@@ -1241,20 +1241,20 @@ describe("Star Quick Dice", () => {
     });
 
     it("defaults to Normal mode", () => {
-      expect(document.querySelector(".sqd-mode-btn").textContent.trim()).toBe("Normal");
+      expect(document.querySelector(".sdb-mode-btn").textContent.trim()).toBe("Normal");
     });
 
     it("cycles Normal -> Adv -> Dis -> Normal on click", () => {
-      const btn = document.querySelector(".sqd-mode-btn");
+      const btn = document.querySelector(".sdb-mode-btn");
       btn.click();
       expect(btn.textContent.trim()).toBe("Adv");
-      expect(btn.classList.contains("sqd-mode-advantage")).toBe(true);
+      expect(btn.classList.contains("sdb-mode-advantage")).toBe(true);
       btn.click();
       expect(btn.textContent.trim()).toBe("Dis");
-      expect(btn.classList.contains("sqd-mode-disadvantage")).toBe(true);
+      expect(btn.classList.contains("sdb-mode-disadvantage")).toBe(true);
       btn.click();
       expect(btn.textContent.trim()).toBe("Normal");
-      expect(btn.classList.contains("sqd-mode-normal")).toBe(true);
+      expect(btn.classList.contains("sdb-mode-normal")).toBe(true);
     });
 
     it("rolls the formula unchanged in Normal mode", () => {
@@ -1263,14 +1263,14 @@ describe("Star Quick Dice", () => {
     });
 
     it("doubles each die and keeps highest in Advantage mode", () => {
-      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector(".sdb-mode-btn").click();
       document.querySelector('[data-roll="1d20"]').click();
       expect(global.Roll).toHaveBeenCalledWith("2d20kh1");
     });
 
     it("doubles each die and keeps lowest in Disadvantage mode", () => {
-      document.querySelector(".sqd-mode-btn").click();
-      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector(".sdb-mode-btn").click();
+      document.querySelector(".sdb-mode-btn").click();
       document.querySelector('[data-roll="1d6"]').click();
       expect(global.Roll).toHaveBeenCalledWith("2d6kl1");
     });
@@ -1278,13 +1278,13 @@ describe("Star Quick Dice", () => {
     it("leaves flat modifiers untouched while doubling dice in Advantage mode", () => {
       setupBar({ customDice: [{ formula: "2d6+3", label: "" }] });
       global.Roll.mockClear();
-      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector(".sdb-mode-btn").click();
       document.querySelector('[data-roll="2d6+3"]').click();
       expect(global.Roll).toHaveBeenCalledWith("4d6kh2+3");
     });
 
     it("notes Advantage in the chat flavor", async () => {
-      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector(".sdb-mode-btn").click();
       document.querySelector('[data-roll="1d20"]').click();
       await new Promise(r => setTimeout(r, 0));
       expect(mockRoll.toMessage).toHaveBeenCalledWith(
@@ -1293,8 +1293,8 @@ describe("Star Quick Dice", () => {
     });
 
     it("notes Disadvantage in the chat flavor", async () => {
-      document.querySelector(".sqd-mode-btn").click();
-      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector(".sdb-mode-btn").click();
+      document.querySelector(".sdb-mode-btn").click();
       document.querySelector('[data-roll="1d20"]').click();
       await new Promise(r => setTimeout(r, 0));
       expect(mockRoll.toMessage).toHaveBeenCalledWith(
@@ -1337,25 +1337,25 @@ describe("Star Quick Dice", () => {
 
     it("shows the nickname in the config table Name column", () => {
       setupBar({ customDice: [{ formula: "2d6+3", label: "Fireball" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      expect(html.find('tr[data-formula="2d6+3"] .sqd-label-cell-input').val()).toBe("Fireball");
+      expect(html.find('tr[data-formula="2d6+3"] .sdb-label-cell-input').val()).toBe("Fireball");
     });
 
     it("persists a nickname entered in the add form on Save", async () => {
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { options } = openDialogHtml();
       const instance = global.foundry.applications.api.DialogV2.__lastInstance;
       const localHtml = $(instance.element);
-      localHtml.find(".sqd-formula-input").val("2d6+3");
-      localHtml.find(".sqd-label-input").val("Fireball");
-      localHtml.find(".sqd-add-btn").trigger("click");
+      localHtml.find(".sdb-formula-input").val("2d6+3");
+      localHtml.find(".sdb-label-input").val("Fireball");
+      localHtml.find(".sdb-add-btn").trigger("click");
       global.game.user.setFlag.mockClear();
       const saveBtn = options.buttons.find(b => b.action === "save");
       await saveBtn.callback(null, null, { element: instance.element });
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([{ formula: "2d6+3", label: "Fireball" }])
       );
     });
@@ -1365,7 +1365,7 @@ describe("Star Quick Dice", () => {
     it("does not execute a script tag injected as a nickname (config table)", () => {
       window.__xssNickScript = undefined;
       setupBar({ customDice: [{ formula: "1d6+2", label: '<script>window.__xssNickScript=true</script>' }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       expect(window.__xssNickScript).toBeUndefined();
     });
@@ -1373,7 +1373,7 @@ describe("Star Quick Dice", () => {
     it("does not execute an event-handler payload injected as a nickname (config table)", () => {
       window.__xssNickAttr = undefined;
       setupBar({ customDice: [{ formula: "1d6+2", label: '" onmouseover="window.__xssNickAttr=true' }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       openDialogHtml();
       expect(window.__xssNickAttr).toBeUndefined();
     });
@@ -1386,16 +1386,16 @@ describe("Star Quick Dice", () => {
 
     it("renders an HTML-character nickname as literal text in the table", () => {
       setupBar({ customDice: [{ formula: "1d6+2", label: '<b>boom</b>' }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      expect(html.find('tr[data-formula="1d6+2"] .sqd-label-cell-input').val()).toBe('<b>boom</b>');
+      expect(html.find('tr[data-formula="1d6+2"] .sdb-label-cell-input').val()).toBe('<b>boom</b>');
     });
   });
 
   describe("config dialog — dice tab inline editing", () => {
     function openDiceTab(flagOverrides = {}) {
       setupBar(flagOverrides);
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       return openDialogHtml();
     }
 
@@ -1407,68 +1407,68 @@ describe("Star Quick Dice", () => {
 
     it("formula cell is pre-filled with the saved formula", () => {
       const { html } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
-      expect(html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val()).toBe("1d6");
+      expect(html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val()).toBe("1d6");
     });
 
     it("nickname cell is pre-filled with the saved nickname", () => {
       const { html } = openDiceTab({ customDice: [{ formula: "1d6", label: "Sword" }] });
-      expect(html.find('tr[data-formula="1d6"] .sqd-label-cell-input').val()).toBe("Sword");
+      expect(html.find('tr[data-formula="1d6"] .sdb-label-cell-input').val()).toBe("Sword");
     });
 
     it("saves the new formula when a formula is edited before saving", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
-      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1d8");
+      html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val("1d8");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([expect.objectContaining({ formula: "1d8" })])
       );
     });
 
     it("saves the new nickname when a nickname is edited before saving", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Sword" }] });
-      html.find('tr[data-formula="1d6"] .sqd-label-cell-input').val("Great Sword");
+      html.find('tr[data-formula="1d6"] .sdb-label-cell-input').val("Great Sword");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([expect.objectContaining({ formula: "1d6", label: "Great Sword" })])
       );
     });
 
     it("updates barGrid to use the new formula after saving an edit", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
-      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1d8");
+      html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val("1d8");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "barGrid",
+        "star-dice-bar", "barGrid",
         expect.arrayContaining([expect.arrayContaining(["1d8"])])
       );
     });
 
     it("normalizes uppercase D in an edited formula to lowercase on save", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
-      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1D8");
+      html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val("1D8");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([expect.objectContaining({ formula: "1d8" })])
       );
     });
 
     it("warns and reverts the invalid row when a formula is edited to an invalid value", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
-      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("abc");
+      html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val("abc");
       global.game.user.setFlag.mockClear();
       global.ui.notifications.warn.mockClear();
       await saveDialog(options);
       expect(global.ui.notifications.warn).toHaveBeenCalled();
       // Save still proceeds; invalid row keeps its original formula.
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([expect.objectContaining({ formula: "1d6" })])
       );
     });
@@ -1477,14 +1477,14 @@ describe("Star Quick Dice", () => {
       const { html, options } = openDiceTab({
         customDice: [{ formula: "1d6", label: "" }, { formula: "1d8", label: "" }],
       });
-      html.find('tr[data-formula="1d8"] .sqd-formula-cell-input').val("1d6");
+      html.find('tr[data-formula="1d8"] .sdb-formula-cell-input').val("1d6");
       global.game.user.setFlag.mockClear();
       global.ui.notifications.warn.mockClear();
       await saveDialog(options);
       expect(global.ui.notifications.warn).toHaveBeenCalled();
       // Save proceeds; the duplicate row reverts to its original formula.
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([expect.objectContaining({ formula: "1d8" })])
       );
     });
@@ -1493,12 +1493,12 @@ describe("Star Quick Dice", () => {
       const { html, options } = openDiceTab({
         customDice: [{ formula: "1d6", label: "" }, { formula: "1d8", label: "" }],
       });
-      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("abc");
-      html.find('tr[data-formula="1d8"] .sqd-formula-cell-input').val("1d10");
+      html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val("abc");
+      html.find('tr[data-formula="1d8"] .sdb-formula-cell-input').val("1d10");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([
           expect.objectContaining({ formula: "1d6" }),  // invalid edit reverted
           expect.objectContaining({ formula: "1d10" }), // valid edit applied
@@ -1512,12 +1512,12 @@ describe("Star Quick Dice", () => {
       const { html, options } = openDiceTab({
         customDice: [{ formula: "1d4", label: "" }, { formula: "1d6", label: "" }],
       });
-      html.find('tr[data-formula="1d4"] .sqd-formula-cell-input').val("1d6");
-      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("bad");
+      html.find('tr[data-formula="1d4"] .sdb-formula-cell-input').val("1d6");
+      html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val("bad");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([
           expect.objectContaining({ formula: "1d4" }), // blocked (1d6 is occupied)
           expect.objectContaining({ formula: "1d6" }), // reverted (invalid edit)
@@ -1527,7 +1527,7 @@ describe("Star Quick Dice", () => {
 
     it("visibility is keyed by the new formula after a formula edit", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
-      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1d8");
+      html.find('tr[data-formula="1d6"] .sdb-formula-cell-input').val("1d8");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       const visibilityCall = global.game.user.setFlag.mock.calls.find(c => c[1] === "diceVisibility");
@@ -1539,7 +1539,7 @@ describe("Star Quick Dice", () => {
   describe("duplicate formula support", () => {
     function openDiceTab(flagOverrides = {}) {
       setupBar(flagOverrides);
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       return openDialogHtml();
     }
 
@@ -1552,11 +1552,11 @@ describe("Star Quick Dice", () => {
     it("allows adding the same formula with a different nickname", () => {
       global.ui.notifications.warn.mockClear();
       setupBarWithDice();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      html.find(".sqd-formula-input").val("1d20");
-      html.find(".sqd-label-input").val("Fire Attack");
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val("1d20");
+      html.find(".sdb-label-input").val("Fire Attack");
+      html.find(".sdb-add-btn").trigger("click");
       expect(global.ui.notifications.warn).not.toHaveBeenCalled();
     });
 
@@ -1575,50 +1575,50 @@ describe("Star Quick Dice", () => {
     it("warns when the same formula and nickname combination already exists", () => {
       global.ui.notifications.warn.mockClear();
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      html.find(".sqd-formula-input").val("1d6");
-      html.find(".sqd-label-input").val("Fire");
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val("1d6");
+      html.find(".sdb-label-input").val("Fire");
+      html.find(".sdb-add-btn").trigger("click");
       global.ui.notifications.warn.mockClear();
-      html.find(".sqd-formula-input").val("1d6");
-      html.find(".sqd-label-input").val("Fire");
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val("1d6");
+      html.find(".sdb-label-input").val("Fire");
+      html.find(".sdb-add-btn").trigger("click");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: 1d6 (Fire) already exists."
+        "Star Dice Bar: 1d6 (Fire) already exists."
       );
     });
 
     it("allows the same formula with an empty nickname and with a nickname", () => {
       global.ui.notifications.warn.mockClear();
       setupBar();
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
-      html.find(".sqd-formula-input").val("1d6");
-      html.find(".sqd-add-btn").trigger("click");
-      html.find(".sqd-formula-input").val("1d6");
-      html.find(".sqd-label-input").val("Fire");
-      html.find(".sqd-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val("1d6");
+      html.find(".sdb-add-btn").trigger("click");
+      html.find(".sdb-formula-input").val("1d6");
+      html.find(".sdb-label-input").val("Fire");
+      html.find(".sdb-add-btn").trigger("click");
       expect(global.ui.notifications.warn).not.toHaveBeenCalled();
       expect(html.find("tbody tr[data-formula='1d6']")).toHaveLength(2);
     });
 
     it("layout tile shows label instead of composite key for a labelled die", () => {
       setupBar({ customDice: [{ formula: "1d6", label: "Fire" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
       html.find("[data-tab='layout']").trigger("click");
-      const tileText = html.find(".sqd-layout-tile").first().text().trim();
+      const tileText = html.find(".sdb-layout-tile").first().text().trim();
       expect(tileText).toBe("Fire");
       expect(tileText).not.toContain("|");
     });
 
     it("layout tile shows formula when die has no label", () => {
       setupBar({ customDice: [{ formula: "1d6", label: "" }] });
-      document.querySelector(".sqd-config-btn").click();
+      document.querySelector(".sdb-config-btn").click();
       const { html } = openDialogHtml();
       html.find("[data-tab='layout']").trigger("click");
-      expect(html.find(".sqd-layout-tile").first().text().trim()).toBe("1d6");
+      expect(html.find(".sdb-layout-tile").first().text().trim()).toBe("1d6");
     });
 
     it("saves two dice with the same formula but different labels as distinct entries", async () => {
@@ -1629,7 +1629,7 @@ describe("Star Quick Dice", () => {
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([
           expect.objectContaining({ formula: "1d6", label: "Fire" }),
           expect.objectContaining({ formula: "1d6", label: "Ice" }),
@@ -1639,11 +1639,11 @@ describe("Star Quick Dice", () => {
 
     it("inline edit: changing label creates a new unique key", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Fire" }] });
-      html.find('tr[data-formula="1d6"] .sqd-label-cell-input').val("Ice");
+      html.find('tr[data-formula="1d6"] .sdb-label-cell-input').val("Ice");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "customDice",
+        "star-dice-bar", "customDice",
         expect.arrayContaining([expect.objectContaining({ formula: "1d6", label: "Ice" })])
       );
     });
@@ -1662,7 +1662,7 @@ describe("Star Quick Dice", () => {
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "barGrid",
+        "star-dice-bar", "barGrid",
         expect.arrayContaining([expect.arrayContaining(["1d6|Fire"])])
       );
     });
@@ -1672,7 +1672,7 @@ describe("Star Quick Dice", () => {
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
-        "star-quick-dice", "barGrid",
+        "star-dice-bar", "barGrid",
         expect.arrayContaining([expect.arrayContaining(["1d6"])])
       );
     });

@@ -18,7 +18,7 @@ npx jest --testNamePattern="some describe block name"
 
 ## Architecture
 
-Star Quick Dice is a FoundryVTT v14 module that adds a quick-access dice bar to the UI. All logic lives in `scripts/main.js` (~550 lines); styles are in `styles/styles.css`.
+Star Dice Bar is a FoundryVTT v14 module that adds a quick-access dice bar to the UI. All logic lives in `scripts/main.js` (~550 lines); styles are in `styles/styles.css`.
 
 There are no built-in dice: the bar starts empty (showing a "Click the gear to add dice" hint) and every die is a user-added custom die. The Reset tab's "Clear All Dice" empties the bar.
 
@@ -27,11 +27,11 @@ There are no built-in dice: the bar starts empty (showing a "Click the gear to a
 2. `Hooks.once("ready")` — builds and mounts the bar DOM, applies saved position, binds drag
 
 **Persistence:**
-- Bar position and per-user config (dice layout, visibility, custom dice) → `game.user.setFlag() / getFlag()` (flag namespace: `"star-quick-dice"`)
+- Bar position and per-user config (dice layout, visibility, custom dice) → `game.user.setFlag() / getFlag()` (flag namespace: `"star-dice-bar"`)
 - Custom dice are stored as `{ formula, label }` objects (`label` is the optional nickname). `getCustomDice()` normalizes legacy plain-string entries to this shape on read. The grid and visibility flags are keyed by `formula`.
 - `barHidden` setting → `game.settings.register() / get() / set()`
 
-**Roll modes:** the bar has a sticky Normal/Advantage/Disadvantage toggle (`.sqd-mode-btn`); the current mode is held on the bar element via `diceBar.data("rollMode")`. Advantage/disadvantage doubles each die term and keeps highest/lowest (e.g. `1d20` → `2d20kh1`); flat `+/-` modifiers are untouched.
+**Roll modes:** the bar has a sticky Normal/Advantage/Disadvantage toggle (`.sdb-mode-btn`); the current mode is held on the bar element via `diceBar.data("rollMode")`. Advantage/disadvantage doubles each die term and keeps highest/lowest (e.g. `1d20` → `2d20kh1`); flat `+/-` modifiers are untouched.
 
 **Key functions in `main.js`:**
 - `renderBar()` — rebuilds dice buttons from the saved grid; button text is `label || formula`, tooltip is the formula; called on init and after config saves

@@ -1,6 +1,6 @@
 /* ── Bar ─────────────────────────────────────────────────────────────────── */
 
-.sqd-dice-bar {
+.sdb-dice-bar {
     position: fixed;
     z-index: 70;
     display: flex;
@@ -13,20 +13,20 @@
     align-items: flex-start;
 }
 
-.sqd-dice-grid {
+.sdb-dice-grid {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.sqd-bar-row {
+.sdb-bar-row {
     display: flex;
     flex-direction: row;
     gap: 4px;
     align-items: center;
 }
 
-.sqd-empty-hint {
+.sdb-empty-hint {
     color: #888;
     font-size: 12px;
     font-style: italic;
@@ -35,7 +35,7 @@
     align-self: center;
 }
 
-.sqd-dice-bar button {
+.sdb-dice-bar button {
     color: white;
     background: #2c2c2c;
     border: 1px solid #555;
@@ -44,11 +44,11 @@
     cursor: pointer;
 }
 
-.sqd-dice-bar button:hover {
+.sdb-dice-bar button:hover {
     background: #444;
 }
 
-.sqd-bar-handle {
+.sdb-bar-handle {
     color: #777;
     cursor: grab;
     font-size: 18px;
@@ -58,35 +58,35 @@
     margin-top: 3px;
 }
 
-.sqd-bar-handle:hover  { color: #aaa; }
-.sqd-bar-handle:active { cursor: grabbing; }
+.sdb-bar-handle:hover  { color: #aaa; }
+.sdb-bar-handle:active { cursor: grabbing; }
 
-.sqd-config-btn {
+.sdb-config-btn {
     opacity: 0.6;
     font-size: 14px;
 }
 
-.sqd-config-btn:hover { opacity: 1; }
+.sdb-config-btn:hover { opacity: 1; }
 
-.sqd-mode-btn {
+.sdb-mode-btn {
     font-size: 11px;
     min-width: 54px;
     text-align: center;
 }
 
-.sqd-mode-btn.sqd-mode-advantage    { border-color: #4a8a4a; color: #9f9; }
-.sqd-mode-btn.sqd-mode-disadvantage { border-color: #8a4a4a; color: #f99; }
+.sdb-mode-btn.sdb-mode-advantage    { border-color: #4a8a4a; color: #9f9; }
+.sdb-mode-btn.sdb-mode-disadvantage { border-color: #8a4a4a; color: #f99; }
 
 /* Single-row: controls wrapper is transparent so handle/mode/config participate
    directly in the bar's flex layout, ordered handle | mode | dice | config */
-.sqd-bar-controls { display: contents; }
-.sqd-bar-handle   { order: 1; }
-.sqd-mode-btn     { order: 2; }
-.sqd-dice-grid    { order: 3; }
-.sqd-config-btn   { order: 4; }
+.sdb-bar-controls { display: contents; }
+.sdb-bar-handle   { order: 1; }
+.sdb-mode-btn     { order: 2; }
+.sdb-dice-grid    { order: 3; }
+.sdb-config-btn   { order: 4; }
 
 /* Multi-row: controls become a stacked column pinned to the top-left */
-.sqd-dice-bar.sqd-bar-multirow .sqd-bar-controls {
+.sdb-dice-bar.sdb-bar-multirow .sdb-bar-controls {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -95,22 +95,22 @@
 }
 
 /* Multi-row: buttons fill available width in equal columns */
-.sqd-dice-bar.sqd-bar-multirow .sqd-bar-row {
+.sdb-dice-bar.sdb-bar-multirow .sdb-bar-row {
     display: grid;
-    grid-template-columns: repeat(var(--sqd-cols), minmax(0, 1fr));
+    grid-template-columns: repeat(var(--sdb-cols), minmax(0, 1fr));
     gap: 4px;
 }
 
 /* ── Config dialog tabs ──────────────────────────────────────────────────── */
 
-.sqd-tabs {
+.sdb-tabs {
     display: flex;
     gap: 2px;
     border-bottom: 1px solid #555;
     margin-bottom: 10px;
 }
 
-.sqd-tab {
+.sdb-tab {
     background: #1a1a1a;
     border: 1px solid #555;
     border-bottom: none;
@@ -121,36 +121,36 @@
     margin-bottom: -1px;
 }
 
-.sqd-tab.sqd-tab-active {
+.sdb-tab.sdb-tab-active {
     background: #2c2c2c;
     color: white;
     border-bottom: 1px solid #2c2c2c;
 }
 
-.sqd-tab-panel-hidden { display: none; }
+.sdb-tab-panel-hidden { display: none; }
 
 /* ── Dice tab ────────────────────────────────────────────────────────────── */
 
-.sqd-config-table {
+.sdb-config-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 4px;
 }
 
-.sqd-config-table th,
-.sqd-config-table td {
+.sdb-config-table th,
+.sdb-config-table td {
     padding: 6px 10px;
     border-bottom: 1px solid #444;
 }
 
-.sqd-checkbox-cell { text-align: center; }
+.sdb-checkbox-cell { text-align: center; }
 
-.sqd-delete-cell {
+.sdb-delete-cell {
     text-align: center;
     width: 32px;
 }
 
-.sqd-delete-btn {
+.sdb-delete-btn {
     background: none;
     border: none;
     color: #c44;
@@ -160,16 +160,16 @@
     line-height: 1;
 }
 
-.sqd-delete-btn:hover { color: #f66; }
+.sdb-delete-btn:hover { color: #f66; }
 
-.sqd-add-row {
+.sdb-add-row {
     display: flex;
     gap: 6px;
     margin-top: 10px;
     margin-bottom: 10px;
 }
 
-.sqd-formula-input {
+.sdb-formula-input {
     flex: 3;
     background: #1a1a1a;
     border: 1px solid #555;
@@ -180,7 +180,7 @@
     box-sizing: border-box;
 }
 
-.sqd-label-input {
+.sdb-label-input {
     flex: 2;
     background: #1a1a1a;
     border: 1px solid #555;
@@ -191,8 +191,8 @@
     box-sizing: border-box;
 }
 
-.sqd-formula-cell-input,
-.sqd-label-cell-input {
+.sdb-formula-cell-input,
+.sdb-label-cell-input {
     background: transparent;
     border: 1px solid transparent;
     border-radius: 3px;
@@ -202,17 +202,17 @@
     box-sizing: border-box;
 }
 
-.sqd-formula-cell-input:hover,
-.sqd-label-cell-input:hover { border-color: #555; }
+.sdb-formula-cell-input:hover,
+.sdb-label-cell-input:hover { border-color: #555; }
 
-.sqd-formula-cell-input:focus,
-.sqd-label-cell-input:focus {
+.sdb-formula-cell-input:focus,
+.sdb-label-cell-input:focus {
     background: #1a1a1a;
     border-color: #777;
     outline: none;
 }
 
-.sqd-add-btn {
+.sdb-add-btn {
     flex: 1;
     background: #2c2c2c;
     border: 1px solid #555;
@@ -224,24 +224,24 @@
     box-sizing: border-box;
 }
 
-.sqd-add-btn:hover { background: #444; }
+.sdb-add-btn:hover { background: #444; }
 
 /* ── Layout tab ──────────────────────────────────────────────────────────── */
 
-.sqd-layout-editor {
+.sdb-layout-editor {
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding: 10px 0;
 }
 
-.sqd-layout-row {
+.sdb-layout-row {
     display: flex;
     gap: 6px;
     flex-wrap: nowrap;
 }
 
-.sqd-layout-tile {
+.sdb-layout-tile {
     background: #2c2c2c;
     border: 2px solid #555;
     border-radius: 4px;
@@ -253,10 +253,10 @@
     user-select: none;
 }
 
-.sqd-layout-tile:active  { cursor: grabbing; }
-.sqd-layout-tile.sqd-dragging { opacity: 0.4; }
+.sdb-layout-tile:active  { cursor: grabbing; }
+.sdb-layout-tile.sdb-dragging { opacity: 0.4; }
 
-.sqd-layout-slot {
+.sdb-layout-slot {
     background: transparent;
     border: 2px dashed #444;
     border-radius: 4px;
@@ -265,25 +265,25 @@
     opacity: 0.45;
 }
 
-.sqd-layout-tile.sqd-slot-over,
-.sqd-layout-slot.sqd-slot-over {
+.sdb-layout-tile.sdb-slot-over,
+.sdb-layout-slot.sdb-slot-over {
     border-color: #8af;
     background: rgba(136, 170, 255, 0.15);
 }
 
-.sqd-layout-controls {
+.sdb-layout-controls {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
 }
 
-.sqd-rows-label {
+.sdb-rows-label {
     color: #ccc;
     font-size: 13px;
 }
 
-.sqd-rows-input {
+.sdb-rows-input {
     background: #1a1a1a;
     border: 1px solid #555;
     border-radius: 4px;
@@ -293,7 +293,7 @@
     width: 52px;
 }
 
-.sqd-layout-hint {
+.sdb-layout-hint {
     color: #888;
     font-size: 11px;
     font-style: italic;
@@ -301,7 +301,7 @@
     text-align: center;
 }
 
-.sqd-layout-empty {
+.sdb-layout-empty {
     color: #888;
     font-style: italic;
     padding: 16px 0;
@@ -310,26 +310,26 @@
 
 /* ── Extra tab ───────────────────────────────────────────────────────────── */
 
-.sqd-extra-panel {
+.sdb-extra-panel {
     display: flex;
     flex-direction: column;
     gap: 14px;
     padding: 6px 0 10px;
 }
 
-.sqd-extra-item {
+.sdb-extra-item {
     display: flex;
     align-items: flex-start;
     gap: 10px;
     cursor: pointer;
 }
 
-.sqd-extra-item input[type="checkbox"] {
+.sdb-extra-item input[type="checkbox"] {
     margin-top: 3px;
     flex-shrink: 0;
 }
 
-.sqd-extra-item p {
+.sdb-extra-item p {
     color: #888;
     font-size: 12px;
     margin: 3px 0 0;
@@ -337,27 +337,27 @@
 
 /* ── Reset tab ───────────────────────────────────────────────────────────── */
 
-.sqd-reset-panel {
+.sdb-reset-panel {
     display: flex;
     flex-direction: column;
     gap: 14px;
     padding: 6px 0 10px;
 }
 
-.sqd-reset-item {
+.sdb-reset-item {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.sqd-reset-item p {
+.sdb-reset-item p {
     color: #888;
     font-size: 12px;
     margin: 3px 0 0;
 }
 
-.sqd-reset-position-btn,
-.sqd-clear-dice-btn {
+.sdb-reset-position-btn,
+.sdb-clear-dice-btn {
     white-space: nowrap;
     background: #2c2c2c;
     border: 1px solid #555;
@@ -368,5 +368,5 @@
     flex-shrink: 0;
 }
 
-.sqd-reset-position-btn:hover,
-.sqd-clear-dice-btn:hover { background: #444; }
+.sdb-reset-position-btn:hover,
+.sdb-clear-dice-btn:hover { background: #444; }
