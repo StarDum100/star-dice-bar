@@ -573,8 +573,8 @@ describe("Star Quick Dice", () => {
       setupBar({ customDice: [{ formula: '<b>1d6</b>', label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
-      const td = html.find("tbody td").filter((_, el) => el.textContent === "<b>1d6</b>");
-      expect(td.length).toBe(1);
+      const input = html.find("tbody .sqd-formula-cell-input").filter((_, el) => el.value === "<b>1d6</b>");
+      expect(input.length).toBe(1);
     });
   });
 
@@ -1339,7 +1339,7 @@ describe("Star Quick Dice", () => {
       setupBar({ customDice: [{ formula: "2d6+3", label: "Fireball" }] });
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
-      expect(html.find('tr[data-formula="2d6+3"] .sqd-nick-cell').text().trim()).toBe("Fireball");
+      expect(html.find('tr[data-formula="2d6+3"] .sqd-nick-cell-input').val()).toBe("Fireball");
     });
 
     it("persists a nickname entered in the add form on Save", async () => {
@@ -1388,7 +1388,107 @@ describe("Star Quick Dice", () => {
       setupBar({ customDice: [{ formula: "1d6+2", label: '<b>boom</b>' }] });
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
-      expect(html.find('tr[data-formula="1d6+2"] .sqd-nick-cell').text()).toBe('<b>boom</b>');
+      expect(html.find('tr[data-formula="1d6+2"] .sqd-nick-cell-input').val()).toBe('<b>boom</b>');
+    });
+  });
+
+  describe("config dialog — dice tab inline editing", () => {
+    function openDiceTab(flagOverrides = {}) {
+      setupBar(flagOverrides);
+      document.querySelector(".sqd-config-btn").click();
+      return openDialogHtml();
+    }
+
+    async function saveDialog(options) {
+      const instance = global.foundry.applications.api.DialogV2.__lastInstance;
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: instance.element });
+    }
+
+    it("formula cell is pre-filled with the saved formula", () => {
+      const { html } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
+      expect(html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val()).toBe("1d6");
+    });
+
+    it("nickname cell is pre-filled with the saved nickname", () => {
+      const { html } = openDiceTab({ customDice: [{ formula: "1d6", label: "Sword" }] });
+      expect(html.find('tr[data-formula="1d6"] .sqd-nick-cell-input').val()).toBe("Sword");
+    });
+
+    it("saves the new formula when a formula is edited before saving", async () => {
+      const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
+      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1d8");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([expect.objectContaining({ formula: "1d8" })])
+      );
+    });
+
+    it("saves the new nickname when a nickname is edited before saving", async () => {
+      const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Sword" }] });
+      html.find('tr[data-formula="1d6"] .sqd-nick-cell-input').val("Great Sword");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([expect.objectContaining({ formula: "1d6", label: "Great Sword" })])
+      );
+    });
+
+    it("updates barGrid to use the new formula after saving an edit", async () => {
+      const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
+      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1d8");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "barGrid",
+        expect.arrayContaining([expect.arrayContaining(["1d8"])])
+      );
+    });
+
+    it("normalizes uppercase D in an edited formula to lowercase on save", async () => {
+      const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
+      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1D8");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([expect.objectContaining({ formula: "1d8" })])
+      );
+    });
+
+    it("warns and does not save when a formula is edited to an invalid value", async () => {
+      const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
+      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("abc");
+      global.game.user.setFlag.mockClear();
+      global.ui.notifications.warn.mockClear();
+      await saveDialog(options);
+      expect(global.ui.notifications.warn).toHaveBeenCalled();
+      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "customDice", expect.anything());
+    });
+
+    it("warns and does not save when two formulas are edited to the same value", async () => {
+      const { html, options } = openDiceTab({
+        customDice: [{ formula: "1d6", label: "" }, { formula: "1d8", label: "" }],
+      });
+      html.find('tr[data-formula="1d8"] .sqd-formula-cell-input').val("1d6");
+      global.game.user.setFlag.mockClear();
+      global.ui.notifications.warn.mockClear();
+      await saveDialog(options);
+      expect(global.ui.notifications.warn).toHaveBeenCalled();
+      expect(global.game.user.setFlag).not.toHaveBeenCalledWith("star-quick-dice", "customDice", expect.anything());
+    });
+
+    it("visibility is keyed by the new formula after a formula edit", async () => {
+      const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "" }] });
+      html.find('tr[data-formula="1d6"] .sqd-formula-cell-input').val("1d8");
+      global.game.user.setFlag.mockClear();
+      await saveDialog(options);
+      const visibilityCall = global.game.user.setFlag.mock.calls.find(c => c[1] === "diceVisibility");
+      expect(Object.keys(visibilityCall[2])).toContain("1d8");
+      expect(Object.keys(visibilityCall[2])).not.toContain("1d6");
     });
   });
 });

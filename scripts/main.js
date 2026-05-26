@@ -218,8 +218,8 @@ async function openConfig(diceBar) {
             : "";
         return `
             <tr data-formula="${safe}">
-                <td>${safe}</td>
-                <td class="sqd-nick-cell">${safeLabel}</td>
+                <td><input type="text" class="sqd-formula-cell-input" value="${safe}"></td>
+                <td><input type="text" class="sqd-nick-cell-input" value="${safeLabel}" placeholder="Nickname"></td>
                 <td class="sqd-checkbox-cell"><input type="checkbox" name="${safe}" ${checked}></td>
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
@@ -431,12 +431,47 @@ async function openConfig(diceBar) {
                 action: "save",
                 label: "Save",
                 callback: async (event, button, dialog) => {
-                    saved = true;
                     const $html = $(dialog.element);
-                    const newVisibility = {};
-                    $html.find("tbody input[type=checkbox]").each(function () {
-                        newVisibility[this.name] = this.checked;
+
+                    // Read and validate formula edits from the table rows.
+                    const editedRows = [];
+                    const formulasSeen = new Set();
+                    let editValid = true;
+                    $html.find("tbody tr").each(function () {
+                        if (!editValid) return false;
+                        const $row    = $(this);
+                        const oldFormula = $row.data("formula");
+                        const newRaw  = $row.find(".sqd-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
+                        const newLabel = $row.find(".sqd-nick-cell-input").val().trim();
+                        const checked  = $row.find("input[type=checkbox]").prop("checked");
+                        if (!isValidFormula(newRaw)) {
+                            ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" is not a valid dice formula.`);
+                            editValid = false;
+                        } else if (formulasSeen.has(newRaw)) {
+                            ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" appears more than once.`);
+                            editValid = false;
+                        } else {
+                            formulasSeen.add(newRaw);
+                            editedRows.push({ oldFormula, newFormula: newRaw, newLabel, checked });
+                        }
                     });
+                    if (!editValid) return false;
+
+                    // Apply formula/label edits to pending state.
+                    const formulaMap = new Map(editedRows.map(r => [r.oldFormula, r.newFormula]));
+                    for (const row of editedRows) {
+                        const entry = pendingCustom.find(d => d.formula === row.oldFormula);
+                        if (entry) { entry.formula = row.newFormula; entry.label = row.newLabel; }
+                    }
+                    for (let r = 0; r < pendingGrid.length; r++) {
+                        pendingGrid[r] = pendingGrid[r].map(f => formulaMap.get(f) ?? f);
+                    }
+                    const newVisibility = {};
+                    for (const { newFormula, checked } of editedRows) {
+                        newVisibility[newFormula] = checked;
+                    }
+
+                    saved = true;
                     await game.user.setFlag(MODULE_ID, "diceVisibility", newVisibility);
                     await game.user.setFlag(MODULE_ID, "customDice", pendingCustom);
                     await game.user.setFlag(MODULE_ID, "barGrid", pendingGrid);
