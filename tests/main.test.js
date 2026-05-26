@@ -391,6 +391,7 @@ describe("Star Quick Dice", () => {
       ["20-digit die size",    "1d" + "1".repeat(20)],
       ["30-digit die size",    "1d" + "1".repeat(30)],
       ["20-digit multiplier",  "1".repeat(20) + "d6"],
+      ["high dice count and face value", "100d9000"],
     ];
 
     describe("bar rendering", () => {
@@ -438,6 +439,19 @@ describe("Star Quick Dice", () => {
           expect(html.find(`tr[data-formula="${formula}"]`).length).toBe(1);
         }
       );
+    });
+
+    describe("large number of custom dice", () => {
+      const MANY_DICE = Array.from({ length: 1000 }, (_, i) => ({ formula: `1d${i + 2}`, label: "" }));
+
+      it("renders without crashing when 1000 custom dice are saved", () => {
+        expect(() => setupBar({ customDice: MANY_DICE })).not.toThrow();
+      });
+
+      it("renders all 1000 buttons when 1000 custom dice are saved", () => {
+        setupBar({ customDice: MANY_DICE });
+        expect(document.querySelectorAll("button[data-roll]")).toHaveLength(1000);
+      });
     });
   });
 
