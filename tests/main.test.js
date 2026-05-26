@@ -38,7 +38,7 @@ global.requestAnimationFrame = cb => cb();
 
 require("../scripts/main.js");
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// -- Helpers -----------------------------------------------------------------
 
 function openDialogHtml() {
   const options = global.foundry.applications.api.DialogV2.__lastOptions;
@@ -69,7 +69,7 @@ function setupBarWithDice(extra = {}) {
 }
 
 
-// ── Star Dice Bar (integration) ────────────────────────────────────────
+// -- Star Dice Bar (integration) --------------------------------------------
 
 describe("Star Dice Bar", () => {
   describe("init hook", () => {
@@ -1288,7 +1288,7 @@ describe("Star Dice Bar", () => {
       document.querySelector('[data-roll="1d20"]').click();
       await new Promise(r => setTimeout(r, 0));
       expect(mockRoll.toMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ flavor: "Quick Roll: 1d20 — Advantage" })
+        expect.objectContaining({ flavor: "Quick Roll: 1d20 -- Advantage" })
       );
     });
 
@@ -1298,7 +1298,7 @@ describe("Star Dice Bar", () => {
       document.querySelector('[data-roll="1d20"]').click();
       await new Promise(r => setTimeout(r, 0));
       expect(mockRoll.toMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ flavor: "Quick Roll: 1d20 — Disadvantage" })
+        expect.objectContaining({ flavor: "Quick Roll: 1d20 -- Disadvantage" })
       );
     });
   });

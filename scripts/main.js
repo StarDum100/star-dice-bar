@@ -112,8 +112,8 @@ function makeRollClickHandler(diceBar, formula, label = "") {
         const roll = new Roll(buildRollFormula(formula, mode));
         await roll.evaluate();
         let flavor = `Quick Roll: ${label ? `${label} (${formula})` : formula}`;
-        if (mode === "advantage")         flavor += " — Advantage";
-        else if (mode === "disadvantage") flavor += " — Disadvantage";
+        if (mode === "advantage")         flavor += " -- Advantage";
+        else if (mode === "disadvantage") flavor += " -- Disadvantage";
         roll.toMessage({
             speaker: ChatMessage.getSpeaker(),
             flavor,
@@ -444,7 +444,7 @@ async function openConfig(diceBar) {
     `;
 
     await foundry.applications.api.DialogV2.wait({
-        window:      { title: `${MODULE_TITLE} — Configure (save to persist changes)` },
+        window:      { title: `${MODULE_TITLE} -- Configure (save to persist changes)` },
         content,
         rejectClose: false,
         buttons: [
@@ -465,7 +465,7 @@ async function openConfig(diceBar) {
                         const formulaOk = isValidFormula(newRaw);
                         const newKey    = dieKey(newRaw, newLabel);
                         if (!formulaOk) {
-                            ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" is not a valid formula — keeping original.`);
+                            ui.notifications.warn(`${MODULE_TITLE}: "${newRaw}" is not a valid formula -- keeping original.`);
                         }
                         rowData.push({ oldKey, newRaw, newLabel, newKey, checked, formulaOk });
                     });
@@ -486,9 +486,9 @@ async function openConfig(diceBar) {
                         let resolvedKey = row.oldKey;
                         if (row.formulaOk) {
                             if (row.newKey !== row.oldKey && keepOriginalKeys.has(row.newKey)) {
-                                ui.notifications.warn(`${MODULE_TITLE}: "${dieDisplay(row.newRaw, row.newLabel)}" already exists — keeping original.`);
+                                ui.notifications.warn(`${MODULE_TITLE}: "${dieDisplay(row.newRaw, row.newLabel)}" already exists -- keeping original.`);
                             } else if (committed.has(row.newKey)) {
-                                ui.notifications.warn(`${MODULE_TITLE}: "${dieDisplay(row.newRaw, row.newLabel)}" already exists — keeping original.`);
+                                ui.notifications.warn(`${MODULE_TITLE}: "${dieDisplay(row.newRaw, row.newLabel)}" already exists -- keeping original.`);
                             } else {
                                 resolvedKey = row.newKey;
                                 const entry = pendingCustom.find(d => dieKey(d.formula, d.label) === row.oldKey);
