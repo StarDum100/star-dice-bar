@@ -180,7 +180,7 @@
     box-sizing: border-box;
 }
 
-.sqd-nick-input {
+.sqd-label-input {
     flex: 2;
     background: #1a1a1a;
     border: 1px solid #555;
@@ -192,7 +192,7 @@
 }
 
 .sqd-formula-cell-input,
-.sqd-nick-cell-input {
+.sqd-label-cell-input {
     background: transparent;
     border: 1px solid transparent;
     border-radius: 3px;
@@ -203,10 +203,10 @@
 }
 
 .sqd-formula-cell-input:hover,
-.sqd-nick-cell-input:hover { border-color: #555; }
+.sqd-label-cell-input:hover { border-color: #555; }
 
 .sqd-formula-cell-input:focus,
-.sqd-nick-cell-input:focus {
+.sqd-label-cell-input:focus {
     background: #1a1a1a;
     border-color: #777;
     outline: none;

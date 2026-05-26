@@ -238,7 +238,7 @@ async function openConfig(diceBar) {
         return `
             <tr data-formula="${safe}" data-key="${safeKey}">
                 <td><input type="text" class="sqd-formula-cell-input" value="${safe}"></td>
-                <td><input type="text" class="sqd-nick-cell-input" value="${safeLabel}" placeholder="Nickname"></td>
+                <td><input type="text" class="sqd-label-cell-input" value="${safeLabel}"></td>
                 <td class="sqd-checkbox-cell"><input type="checkbox" name="${safeKey}" ${checked}></td>
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
@@ -345,31 +345,31 @@ async function openConfig(diceBar) {
         });
 
         $html.on("click", ".sqd-add-btn", () => {
-            const input     = $html.find(".sqd-formula-input");
-            const nickInput = $html.find(".sqd-nick-input");
-            const raw  = input.val().trim().toLowerCase().replace(/\s+/g, "");
-            const nick = nickInput.val().trim();
+            const input      = $html.find(".sqd-formula-input");
+            const labelInput = $html.find(".sqd-label-input");
+            const raw   = input.val().trim().toLowerCase().replace(/\s+/g, "");
+            const label = labelInput.val().trim();
 
             if (!isValidFormula(raw)) {
                 ui.notifications.warn(`${MODULE_TITLE}: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6.`);
                 return;
             }
-            if (pendingCustom.some(d => d.formula === raw && d.label === nick)) {
-                ui.notifications.warn(`${MODULE_TITLE}: ${dieDisplay(raw, nick)} already exists.`);
+            if (pendingCustom.some(d => d.formula === raw && d.label === label)) {
+                ui.notifications.warn(`${MODULE_TITLE}: ${dieDisplay(raw, label)} already exists.`);
                 return;
             }
 
-            const key = dieKey(raw, nick);
-            pendingCustom.push({ formula: raw, label: nick });
+            const key = dieKey(raw, label);
+            pendingCustom.push({ formula: raw, label });
             if (pendingGrid.length === 0) pendingGrid.push([key]);
             else pendingGrid[pendingGrid.length - 1].push(key);
 
-            $html.find("tbody").append(makeRow(raw, true, nick));
+            $html.find("tbody").append(makeRow(raw, true, label));
             input.val("").focus();
-            nickInput.val("");
+            labelInput.val("");
         });
 
-        $html.on("keydown", ".sqd-formula-input, .sqd-nick-input", (e) => {
+        $html.on("keydown", ".sqd-formula-input, .sqd-label-input", (e) => {
             if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
         });
     }
@@ -395,7 +395,7 @@ async function openConfig(diceBar) {
         <div class="sqd-tab-panel" data-panel="dice">
             <table class="sqd-config-table">
                 <thead>
-                    <tr><th>Dice</th><th>Name</th><th>Visible</th><th></th></tr>
+                    <tr><th>Formula</th><th>Label</th><th>Visible</th><th></th></tr>
                 </thead>
                 <tbody>
                     ${flatKeys.map(key => {
@@ -406,7 +406,7 @@ async function openConfig(diceBar) {
             </table>
             <div class="sqd-add-row">
                 <input type="text" class="sqd-formula-input" placeholder="Formula e.g. 1d20, 2d6+3">
-                <input type="text" class="sqd-nick-input" placeholder="Nickname (optional)">
+                <input type="text" class="sqd-label-input" placeholder="Label (optional)">
                 <button type="button" class="sqd-add-btn">Add</button>
             </div>
         </div>
@@ -460,7 +460,7 @@ async function openConfig(diceBar) {
                         const $row      = $(this);
                         const oldKey    = $row.data("key");
                         const newRaw    = $row.find(".sqd-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
-                        const newLabel  = $row.find(".sqd-nick-cell-input").val().trim();
+                        const newLabel  = $row.find(".sqd-label-cell-input").val().trim();
                         const checked   = $row.find("input[type=checkbox]").prop("checked");
                         const formulaOk = isValidFormula(newRaw);
                         const newKey    = dieKey(newRaw, newLabel);

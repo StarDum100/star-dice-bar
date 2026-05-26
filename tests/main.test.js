@@ -1169,9 +1169,9 @@ describe("Star Quick Dice", () => {
       ({ html } = openDialogHtml());
     });
 
-    function addDie(formula, nick) {
+    function addDie(formula, label) {
       html.find(".sqd-formula-input").val(formula);
-      if (nick !== undefined) html.find(".sqd-nick-input").val(nick);
+      if (label !== undefined) html.find(".sqd-label-input").val(label);
       html.find(".sqd-add-btn").trigger("click");
     }
 
@@ -1339,7 +1339,7 @@ describe("Star Quick Dice", () => {
       setupBar({ customDice: [{ formula: "2d6+3", label: "Fireball" }] });
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
-      expect(html.find('tr[data-formula="2d6+3"] .sqd-nick-cell-input').val()).toBe("Fireball");
+      expect(html.find('tr[data-formula="2d6+3"] .sqd-label-cell-input').val()).toBe("Fireball");
     });
 
     it("persists a nickname entered in the add form on Save", async () => {
@@ -1349,7 +1349,7 @@ describe("Star Quick Dice", () => {
       const instance = global.foundry.applications.api.DialogV2.__lastInstance;
       const localHtml = $(instance.element);
       localHtml.find(".sqd-formula-input").val("2d6+3");
-      localHtml.find(".sqd-nick-input").val("Fireball");
+      localHtml.find(".sqd-label-input").val("Fireball");
       localHtml.find(".sqd-add-btn").trigger("click");
       global.game.user.setFlag.mockClear();
       const saveBtn = options.buttons.find(b => b.action === "save");
@@ -1388,7 +1388,7 @@ describe("Star Quick Dice", () => {
       setupBar({ customDice: [{ formula: "1d6+2", label: '<b>boom</b>' }] });
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
-      expect(html.find('tr[data-formula="1d6+2"] .sqd-nick-cell-input').val()).toBe('<b>boom</b>');
+      expect(html.find('tr[data-formula="1d6+2"] .sqd-label-cell-input').val()).toBe('<b>boom</b>');
     });
   });
 
@@ -1412,7 +1412,7 @@ describe("Star Quick Dice", () => {
 
     it("nickname cell is pre-filled with the saved nickname", () => {
       const { html } = openDiceTab({ customDice: [{ formula: "1d6", label: "Sword" }] });
-      expect(html.find('tr[data-formula="1d6"] .sqd-nick-cell-input').val()).toBe("Sword");
+      expect(html.find('tr[data-formula="1d6"] .sqd-label-cell-input').val()).toBe("Sword");
     });
 
     it("saves the new formula when a formula is edited before saving", async () => {
@@ -1428,7 +1428,7 @@ describe("Star Quick Dice", () => {
 
     it("saves the new nickname when a nickname is edited before saving", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Sword" }] });
-      html.find('tr[data-formula="1d6"] .sqd-nick-cell-input').val("Great Sword");
+      html.find('tr[data-formula="1d6"] .sqd-label-cell-input').val("Great Sword");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
@@ -1555,7 +1555,7 @@ describe("Star Quick Dice", () => {
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
       html.find(".sqd-formula-input").val("1d20");
-      html.find(".sqd-nick-input").val("Fire Attack");
+      html.find(".sqd-label-input").val("Fire Attack");
       html.find(".sqd-add-btn").trigger("click");
       expect(global.ui.notifications.warn).not.toHaveBeenCalled();
     });
@@ -1578,11 +1578,11 @@ describe("Star Quick Dice", () => {
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
       html.find(".sqd-formula-input").val("1d6");
-      html.find(".sqd-nick-input").val("Fire");
+      html.find(".sqd-label-input").val("Fire");
       html.find(".sqd-add-btn").trigger("click");
       global.ui.notifications.warn.mockClear();
       html.find(".sqd-formula-input").val("1d6");
-      html.find(".sqd-nick-input").val("Fire");
+      html.find(".sqd-label-input").val("Fire");
       html.find(".sqd-add-btn").trigger("click");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
         "Star Quick Dice: 1d6 (Fire) already exists."
@@ -1597,7 +1597,7 @@ describe("Star Quick Dice", () => {
       html.find(".sqd-formula-input").val("1d6");
       html.find(".sqd-add-btn").trigger("click");
       html.find(".sqd-formula-input").val("1d6");
-      html.find(".sqd-nick-input").val("Fire");
+      html.find(".sqd-label-input").val("Fire");
       html.find(".sqd-add-btn").trigger("click");
       expect(global.ui.notifications.warn).not.toHaveBeenCalled();
       expect(html.find("tbody tr[data-formula='1d6']")).toHaveLength(2);
@@ -1639,7 +1639,7 @@ describe("Star Quick Dice", () => {
 
     it("inline edit: changing label creates a new unique key", async () => {
       const { html, options } = openDiceTab({ customDice: [{ formula: "1d6", label: "Fire" }] });
-      html.find('tr[data-formula="1d6"] .sqd-nick-cell-input').val("Ice");
+      html.find('tr[data-formula="1d6"] .sqd-label-cell-input').val("Ice");
       global.game.user.setFlag.mockClear();
       await saveDialog(options);
       expect(global.game.user.setFlag).toHaveBeenCalledWith(
