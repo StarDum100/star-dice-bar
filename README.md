@@ -33,11 +33,14 @@ npm install
 
 ### Testing locally in Foundry
 
-Symlink or copy the module folder into your Foundry data directory:
+Link the project folder into your Foundry modules directory with a directory junction (no admin required):
 
+```cmd
+mklink /J "%LOCALAPPDATA%\FoundryVTT\Data\modules\star-dice-bar" "<path-to-this-repo>"
 ```
-<Foundry Data>/Data/modules/star-dice-bar/
-```
+
+
+After the junction is created, changes in this repo are reflected immediately in Foundry — no copying needed.
 
 Then launch Foundry, enable the module in your world, and open the browser console (`F12`) to watch for errors. Verify:
 
