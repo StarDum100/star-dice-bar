@@ -9,17 +9,11 @@ const MODULE_TITLE = "Star Quick Dice";
 const ROLL_MODES = ["normal", "advantage", "disadvantage"];
 const MODE_LABELS = { normal: "Normal", advantage: "Adv", disadvantage: "Dis" };
 
-// Dice notation is case-insensitive — silently treat an uppercase "D" as "d".
-function normalizeFormula(formula) {
-    return String(formula).replace(/D/g, "d");
-}
-
 // A custom die formula: one or more `NdX` dice terms and/or integers joined by + / -,
 // e.g. "1d20", "2d6+3", "1d8+1d6". Leading sign and bare die size (e.g. "d6") are rejected.
-// Case-insensitive: "1D6" is accepted and normalized to "1d6".
-const FORMULA_RE = /^\d+(?:d\d+)?(?:[+-]\d+(?:d\d+)?)*$/i;
+const FORMULA_RE = /^\d+(?:d\d+)?(?:[+-]\d+(?:d\d+)?)*$/;
 function isValidFormula(raw) {
-    return FORMULA_RE.test(raw) && /d/i.test(raw);
+    return FORMULA_RE.test(raw) && raw.includes("d");
 }
 
 // Advantage/disadvantage doubles each die term and keeps the highest/lowest half,
@@ -44,11 +38,7 @@ function escapeHtml(str) {
 
 function getCustomDice() {
     const saved = game.user.getFlag(MODULE_ID, "customDice") ?? [];
-    // Legacy saved data stored plain formula strings; normalize to { formula, label }.
-    // Formulas are normalized to lowercase "d" so any data saved with "D" still resolves.
-    return saved.map(d => typeof d === "string"
-        ? { formula: normalizeFormula(d), label: "" }
-        : { formula: normalizeFormula(d?.formula ?? ""), label: d?.label ?? "" });
+    return saved.map(d => ({ formula: d?.formula ?? "", label: d?.label ?? "" }));
 }
 
 function customFormulas(customDice = getCustomDice()) {
@@ -338,7 +328,7 @@ async function openConfig(diceBar) {
         $html.on("click", ".sqd-add-btn", () => {
             const input     = $html.find(".sqd-formula-input");
             const nickInput = $html.find(".sqd-nick-input");
-            const raw  = normalizeFormula(input.val().trim().replace(/\s+/g, ""));
+            const raw  = input.val().trim().toLowerCase().replace(/\s+/g, "");
             const nick = nickInput.val().trim();
 
             if (!isValidFormula(raw)) {

@@ -193,12 +193,12 @@ describe("Star Quick Dice", () => {
 
     describe("custom dice", () => {
       it("renders custom dice from saved flags", () => {
-        setupBar({ customDice: ["1d105"] });
+        setupBar({ customDice: [{ formula: "1d105", label: "" }] });
         expect(document.querySelector('[data-roll="1d105"]')).not.toBeNull();
       });
 
       it("renders one button when one custom die is saved", () => {
-        setupBar({ customDice: ["2d6"] });
+        setupBar({ customDice: [{ formula: "2d6", label: "" }] });
         expect(document.querySelectorAll("button[data-roll]")).toHaveLength(1);
       });
     });
@@ -334,7 +334,7 @@ describe("Star Quick Dice", () => {
     it.each([
       ["1d4"], ["1d105"], ["2d6"], ["3d8"],
     ])("saved formula %s displays as its own label", (formula) => {
-      setupBar({ customDice: [formula] });
+      setupBar({ customDice: [{ formula, label: "" }] });
       const btn = document.querySelector(`[data-roll="${formula}"]`);
       expect(btn).not.toBeNull();
       expect(btn.textContent.trim()).toBe(formula);
@@ -342,44 +342,44 @@ describe("Star Quick Dice", () => {
 
     describe("invalid saved formula values", () => {
       it("renders without crashing when saved formula has no digits", () => {
-        expect(() => setupBar({ customDice: ["abc"] })).not.toThrow();
+        expect(() => setupBar({ customDice: [{ formula: "abc", label: "" }] })).not.toThrow();
       });
 
       it("renders without crashing when saved formula is empty", () => {
-        expect(() => setupBar({ customDice: [""] })).not.toThrow();
+        expect(() => setupBar({ customDice: [{ formula: "", label: "" }] })).not.toThrow();
       });
 
       it("renders without crashing when saved formula contains special characters", () => {
-        expect(() => setupBar({ customDice: ["!@#$%^&*()"] })).not.toThrow();
+        expect(() => setupBar({ customDice: [{ formula: "!@#$%^&*()", label: "" }] })).not.toThrow();
       });
 
       it("renders without crashing when saved formula has a negative multiplier", () => {
-        expect(() => setupBar({ customDice: ["-1d6"] })).not.toThrow();
+        expect(() => setupBar({ customDice: [{ formula: "-1d6", label: "" }] })).not.toThrow();
       });
 
       it("renders without crashing when saved formula has a negative die size", () => {
-        expect(() => setupBar({ customDice: ["1d-6"] })).not.toThrow();
+        expect(() => setupBar({ customDice: [{ formula: "1d-6", label: "" }] })).not.toThrow();
       });
 
       it("renders without crashing when saved formula contains arithmetic", () => {
-        expect(() => setupBar({ customDice: ["2d6-1"] })).not.toThrow();
+        expect(() => setupBar({ customDice: [{ formula: "2d6-1", label: "" }] })).not.toThrow();
       });
 
       it("does not execute a script tag injected as a saved formula", () => {
         window.__xssLabel = undefined;
-        setupBar({ customDice: ['<script>window.__xssLabel = true</script>'] });
+        setupBar({ customDice: [{ formula: '<script>window.__xssLabel = true</script>', label: "" }] });
         expect(window.__xssLabel).toBeUndefined();
       });
 
       it("does not execute an event handler injected as a saved formula", () => {
         window.__xssFormula = undefined;
-        setupBar({ customDice: ['1d6" onmouseover="window.__xssFormula=true'] });
+        setupBar({ customDice: [{ formula: '1d6" onmouseover="window.__xssFormula=true', label: "" }] });
         expect(window.__xssFormula).toBeUndefined();
       });
 
       it("does not execute an img onerror payload injected as a saved formula", () => {
         window.__xssImg = undefined;
-        setupBar({ customDice: ['<img src=x onerror="window.__xssImg=true">'] });
+        setupBar({ customDice: [{ formula: '<img src=x onerror="window.__xssImg=true">', label: "" }] });
         expect(window.__xssImg).toBeUndefined();
       });
     });
@@ -397,14 +397,14 @@ describe("Star Quick Dice", () => {
       it.each(LARGE_FORMULAS)(
         "renders without crashing when saved formula has %s",
         (_, formula) => {
-          expect(() => setupBar({ customDice: [formula] })).not.toThrow();
+          expect(() => setupBar({ customDice: [{ formula, label: "" }] })).not.toThrow();
         }
       );
 
       it.each(LARGE_FORMULAS)(
         "displays the full formula on the button when saved formula has %s",
         (_, formula) => {
-          setupBar({ customDice: [formula] });
+          setupBar({ customDice: [{ formula, label: "" }] });
           const btn = document.querySelector(`[data-roll="${formula}"]`);
           expect(btn).not.toBeNull();
           expect(btn.textContent.trim()).toBe(formula);
@@ -533,7 +533,7 @@ describe("Star Quick Dice", () => {
   describe("config dialog — XSS in dice table", () => {
     it("does not execute a script tag injected as a saved formula", () => {
       window.__xssDialogScript = undefined;
-      setupBar({ customDice: ['<script>window.__xssDialogScript = true</script>'] });
+      setupBar({ customDice: [{ formula: '<script>window.__xssDialogScript = true</script>', label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       openDialogHtml();
       expect(window.__xssDialogScript).toBeUndefined();
@@ -541,7 +541,7 @@ describe("Star Quick Dice", () => {
 
     it("does not execute an event handler injected as a saved formula", () => {
       window.__xssDialogAttr = undefined;
-      setupBar({ customDice: ['1d6" onmouseover="window.__xssDialogAttr=true'] });
+      setupBar({ customDice: [{ formula: '1d6" onmouseover="window.__xssDialogAttr=true', label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       openDialogHtml();
       expect(window.__xssDialogAttr).toBeUndefined();
@@ -549,14 +549,14 @@ describe("Star Quick Dice", () => {
 
     it("does not execute an img onerror payload injected as a saved formula", () => {
       window.__xssDialogImg = undefined;
-      setupBar({ customDice: ['<img src=x onerror="window.__xssDialogImg=true">'] });
+      setupBar({ customDice: [{ formula: '<img src=x onerror="window.__xssDialogImg=true">', label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       openDialogHtml();
       expect(window.__xssDialogImg).toBeUndefined();
     });
 
     it("displays a formula containing HTML characters as literal text in the table", () => {
-      setupBar({ customDice: ['<b>1d6</b>'] });
+      setupBar({ customDice: [{ formula: '<b>1d6</b>', label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       const { html } = openDialogHtml();
       const td = html.find("tbody td").filter((_, el) => el.textContent === "<b>1d6</b>");
@@ -1024,7 +1024,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("clear dice button saves an empty bar when Save is clicked", async () => {
-      setupBar({ customDice: ["1d105"] });
+      setupBar({ customDice: [{ formula: "1d105", label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       const { options } = openDialogHtml();
       const instance = global.foundry.applications.api.DialogV2.__lastInstance;
@@ -1049,7 +1049,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("clear dice button empties the bar immediately", () => {
-      setupBar({ customDice: ["1d105"] });
+      setupBar({ customDice: [{ formula: "1d105", label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       openDialogHtml();
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
@@ -1058,7 +1058,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("clear dice button shows the empty-state hint on the bar", () => {
-      setupBar({ customDice: ["1d105"] });
+      setupBar({ customDice: [{ formula: "1d105", label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       openDialogHtml();
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
@@ -1067,7 +1067,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("clear dice button removes all rows from the dice table", () => {
-      setupBar({ customDice: ["1d105"] });
+      setupBar({ customDice: [{ formula: "1d105", label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       const { html: localHtml } = openDialogHtml();
       expect(localHtml.find("tbody tr[data-formula='1d105']").length).toBe(1);
@@ -1076,7 +1076,7 @@ describe("Star Quick Dice", () => {
     });
 
     it("clear dice button restores original bar dice when dialog is closed without Save", async () => {
-      setupBar({ customDice: ["1d105"] });
+      setupBar({ customDice: [{ formula: "1d105", label: "" }] });
       document.querySelector(".sqd-config-btn").click();
       openDialogHtml();
       const localHtml = $(global.foundry.applications.api.DialogV2.__lastInstance.element);
@@ -1215,21 +1215,6 @@ describe("Star Quick Dice", () => {
       html.find(".sqd-add-btn").trigger("click");
       expect(html.find('tr[data-formula="2d6+1d4"]').length).toBe(1);
     });
-
-    it("normalizes uppercase D in saved data when rendering the bar", () => {
-      setupBar({ customDice: [{ formula: "1D8", label: "" }] });
-      expect(document.querySelector('[data-roll="1d8"]')).not.toBeNull();
-      expect(document.querySelector('[data-roll="1D8"]')).toBeNull();
-    });
-
-    it("rolls a normalized formula when a die was saved with uppercase D", () => {
-      const mockRoll = { evaluate: jest.fn().mockResolvedValue(undefined), toMessage: jest.fn() };
-      global.Roll.mockClear();
-      global.Roll.mockImplementation(() => mockRoll);
-      setupBar({ customDice: [{ formula: "1D20", label: "" }] });
-      document.querySelector('[data-roll="1d20"]').click();
-      expect(global.Roll).toHaveBeenCalledWith("1d20");
-    });
   });
 
   describe("roll modes (advantage / disadvantage)", () => {
@@ -1318,8 +1303,8 @@ describe("Star Quick Dice", () => {
       expect(document.querySelector('[data-roll="2d6+3"]').textContent.trim()).toBe("2d6+3");
     });
 
-    it("still renders legacy string-format saved dice", () => {
-      setupBar({ customDice: ["1d105"] });
+    it("renders a die with no nickname using the formula as the button label", () => {
+      setupBar({ customDice: [{ formula: "1d105", label: "" }] });
       const btn = document.querySelector('[data-roll="1d105"]');
       expect(btn).not.toBeNull();
       expect(btn.textContent.trim()).toBe("1d105");
