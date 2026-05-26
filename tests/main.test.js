@@ -34,6 +34,7 @@ global.foundry.applications.api.DialogV2.wait = jest.fn().mockImplementation((op
   global.foundry.applications.api.DialogV2.__resolveDialog = (val) => resolveDialog(val);
   return new Promise(r => { resolveDialog = r; });
 });
+global.requestAnimationFrame = cb => cb();
 
 require("../scripts/main.js");
 
@@ -243,6 +244,38 @@ describe("Star Quick Dice", () => {
     it("applies a default top of 10px when no barPosition flag is set", () => {
       setupBar();
       expect(document.querySelector(".sqd-dice-bar").style.top).toBe("10px");
+    });
+
+    it("defers position calculation to requestAnimationFrame so outerWidth is accurate", () => {
+      let rafCb;
+      global.requestAnimationFrame = cb => { rafCb = cb; };
+      try {
+        setupBar();
+        // RAF scheduled but not yet fired — position not yet applied
+        const bar = document.querySelector(".sqd-dice-bar");
+        expect(bar.style.left).toBe("");
+        expect(bar.style.top).toBe("");
+        // After RAF fires, default position is applied
+        rafCb();
+        expect(bar.style.top).toBe("10px");
+      } finally {
+        global.requestAnimationFrame = cb => cb();
+      }
+    });
+
+    it("barHidden hide is also deferred so the bar is visible when outerWidth is measured", () => {
+      let rafCb;
+      global.requestAnimationFrame = cb => { rafCb = cb; };
+      try {
+        setupBar({ barHidden: true });
+        // Bar should still be visible before RAF fires (so layout can be measured)
+        expect(document.querySelector(".sqd-dice-bar").style.display).not.toBe("none");
+        rafCb();
+        // After RAF: position applied and bar hidden
+        expect(document.querySelector(".sqd-dice-bar").style.display).toBe("none");
+      } finally {
+        global.requestAnimationFrame = cb => cb();
+      }
     });
 
     it("computes default center position after dice buttons are rendered", () => {

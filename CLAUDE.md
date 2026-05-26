@@ -18,7 +18,7 @@ npx jest --testNamePattern="some describe block name"
 
 ## Architecture
 
-Star Quick Dice is a FoundryVTT v13 module that adds a quick-access dice bar to the UI. All logic lives in `scripts/main.js` (~457 lines); styles are in `styles/styles.css`.
+Star Quick Dice is a FoundryVTT v14 module that adds a quick-access dice bar to the UI. All logic lives in `scripts/main.js` (~480 lines); styles are in `styles/styles.css`.
 
 **Lifecycle:**
 1. `Hooks.once("init")` — registers `barHidden` as a client-scoped game setting

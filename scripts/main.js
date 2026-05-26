@@ -1,4 +1,6 @@
-(function () {
+const MODULE_ID = "star-quick-dice";
+const MODULE_TITLE = "Star Quick Dice";
+
 const BUILT_IN_DICE = ["1d4", "1d6", "1d8", "1d10", "1d12", "1d20", "1d100"];
 
 function escapeHtml(str) {
@@ -6,21 +8,22 @@ function escapeHtml(str) {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
 function getCustomDice() {
-    return game.user.getFlag("star-quick-dice", "customDice") ?? [];
+    return game.user.getFlag(MODULE_ID, "customDice") ?? [];
 }
 
 function getBarGrid(customDice = getCustomDice()) {
-    const saved = game.user.getFlag("star-quick-dice", "barGrid");
+    const saved = game.user.getFlag(MODULE_ID, "barGrid");
     if (saved?.length) return saved;
     return [[...BUILT_IN_DICE, ...customDice]];
 }
 
 function getVisibility(customDice = getCustomDice()) {
-    const saved = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
+    const saved = game.user.getFlag(MODULE_ID, "diceVisibility") ?? {};
     const visibility = {};
     for (const formula of [...BUILT_IN_DICE, ...customDice]) {
         visibility[formula] = saved[formula] !== false;
@@ -28,7 +31,7 @@ function getVisibility(customDice = getCustomDice()) {
     return visibility;
 }
 
-function applyBarPosition(diceBar, savedPos = game.user.getFlag("star-quick-dice", "barPosition")) {
+function applyBarPosition(diceBar, savedPos = game.user.getFlag(MODULE_ID, "barPosition")) {
     const pos = savedPos ?? {
         left: Math.round((window.innerWidth - diceBar.outerWidth()) / 2),
         top: 10,
@@ -55,7 +58,7 @@ function initBarDrag(diceBar) {
 
         $(document).on("mouseup.sqd-drag", () => {
             $(document).off("mousemove.sqd-drag mouseup.sqd-drag");
-            game.user.setFlag("star-quick-dice", "barPosition", {
+            game.user.setFlag(MODULE_ID, "barPosition", {
                 left: parseInt(diceBar.css("left")),
                 top:  parseInt(diceBar.css("top")),
             });
@@ -154,8 +157,8 @@ function reshapeGrid(pendingGrid, numRows, flat = pendingGrid.flat()) {
 }
 
 async function openConfig(diceBar) {
-    const savedVisibility = game.user.getFlag("star-quick-dice", "diceVisibility") ?? {};
-    const barHidden       = game.settings.get("star-quick-dice", "barHidden");
+    const savedVisibility = game.user.getFlag(MODULE_ID, "diceVisibility") ?? {};
+    const barHidden       = game.settings.get(MODULE_ID, "barHidden");
     const pendingCustom   = [...getCustomDice()];
     const pendingGrid     = getBarGrid().map(row => [...row]);
 
@@ -177,6 +180,140 @@ async function openConfig(diceBar) {
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
         `;
+    }
+
+    function wireLayoutTab($html) {
+        let dragIndex = -1;
+
+        $html.on("dragstart", ".sqd-layout-tile", (e) => {
+            dragIndex = parseInt($(e.currentTarget).data("index"));
+            e.originalEvent.dataTransfer.effectAllowed = "move";
+            setTimeout(() => $(e.currentTarget).addClass("sqd-dragging"), 0);
+        });
+
+        $html.on("dragend", ".sqd-layout-tile", () => {
+            $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-dragging sqd-slot-over");
+            dragIndex = -1;
+        });
+
+        $html.on("dragover", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+            const idx = parseInt($(e.currentTarget).data("index"));
+            if (dragIndex === -1 || idx === dragIndex) return;
+            e.preventDefault();
+            $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-slot-over");
+            $(e.currentTarget).addClass("sqd-slot-over");
+        });
+
+        $html.on("dragleave", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+            $(e.currentTarget).removeClass("sqd-slot-over");
+        });
+
+        $html.on("drop", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
+            e.preventDefault();
+            const tgtIdx = parseInt($(e.currentTarget).data("index"));
+            const srcIdx = dragIndex;
+            dragIndex = -1;
+            if (srcIdx === -1 || tgtIdx === srcIdx) return;
+
+            const flat    = pendingGrid.flat();
+            const formula = flat[srcIdx];
+            flat.splice(srcIdx, 1);
+            const adjusted = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
+            flat.splice(Math.min(adjusted, flat.length), 0, formula);
+
+            reshapeGrid(pendingGrid, pendingGrid.length, flat);
+            renderLayoutEditor($html, pendingGrid);
+        });
+
+        $html.on("change", ".sqd-rows-input", (e) => {
+            const flat = pendingGrid.flat();
+            let n = parseInt(e.target.value);
+            if (isNaN(n) || n < 1) n = 1;
+            if (n > flat.length) n = flat.length;
+            $(e.target).val(n);
+            reshapeGrid(pendingGrid, n, flat);
+            renderLayoutEditor($html, pendingGrid);
+        });
+    }
+
+    function wireResetTab($html) {
+        $html.on("click", ".sqd-reset-position-btn", () => {
+            if (!pendingResetPosition) {
+                originalPosition = {
+                    left: parseInt(diceBar.css("left")),
+                    top:  parseInt(diceBar.css("top")),
+                };
+            }
+            pendingResetPosition = true;
+            applyBarPosition(diceBar, null);
+        });
+
+        $html.on("click", ".sqd-reset-dice-btn", () => {
+            pendingResetDice = true;
+            pendingCustom.splice(0);
+            pendingGrid.splice(0, pendingGrid.length, [...BUILT_IN_DICE]);
+            $html.find("tbody tr").has(".sqd-delete-btn").remove();
+            $html.find("tbody input[type=checkbox]").prop("checked", true);
+
+            if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
+                renderLayoutEditor($html, pendingGrid);
+            }
+
+            const resetVisibility = Object.fromEntries(BUILT_IN_DICE.map(f => [f, true]));
+            renderBar(diceBar, { customDice: [], grid: [[...BUILT_IN_DICE]], visibility: resetVisibility });
+        });
+    }
+
+    function wireDiceTab($html) {
+        $html.on("click", ".sqd-delete-btn", (e) => {
+            const row       = $(e.currentTarget).closest("tr");
+            const formula   = row.data("formula");
+            const customIdx = pendingCustom.indexOf(formula);
+            if (customIdx !== -1) {
+                pendingCustom.splice(customIdx, 1);
+                for (let r = 0; r < pendingGrid.length; r++) {
+                    const idx = pendingGrid[r].indexOf(formula);
+                    if (idx !== -1) {
+                        pendingGrid[r].splice(idx, 1);
+                        if (pendingGrid[r].length === 0) pendingGrid.splice(r, 1);
+                        break;
+                    }
+                }
+            }
+            row.remove();
+        });
+
+        $html.on("click", ".sqd-add-btn", () => {
+            const input = $html.find(".sqd-formula-input");
+            const raw   = input.val().trim().toLowerCase();
+
+            if (!/^\d+d\d+$/.test(raw)) {
+                ui.notifications.warn(`${MODULE_TITLE}: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105.`);
+                return;
+            }
+            if ([...BUILT_IN_DICE, ...pendingCustom].includes(raw)) {
+                ui.notifications.warn(`${MODULE_TITLE}: ${raw} already exists.`);
+                return;
+            }
+
+            pendingCustom.push(raw);
+            if (pendingGrid.length === 0) pendingGrid.push([raw]);
+            else pendingGrid[pendingGrid.length - 1].push(raw);
+
+            $html.find("tbody").append(makeRow(raw, true));
+            input.val("").focus();
+        });
+
+        $html.on("keydown", ".sqd-formula-input", (e) => {
+            if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
+        });
+    }
+
+    function wireExtraTab($html) {
+        $html.on("change", ".sqd-hide-bar-checkbox", (e) => {
+            if (e.target.checked) diceBar.hide();
+            else                  diceBar.show();
+        });
     }
 
     const allDice = new Set([...BUILT_IN_DICE, ...pendingCustom]);
@@ -239,7 +376,7 @@ async function openConfig(diceBar) {
     `;
 
     await foundry.applications.api.DialogV2.wait({
-        window:      { title: "Star Quick Dice — Configure (save to persist changes)" },
+        window:      { title: `${MODULE_TITLE} — Configure (save to persist changes)` },
         content,
         rejectClose: false,
         buttons: [
@@ -253,14 +390,14 @@ async function openConfig(diceBar) {
                     $html.find("tbody input[type=checkbox]").each(function () {
                         newVisibility[this.name] = this.checked;
                     });
-                    await game.user.setFlag("star-quick-dice", "diceVisibility", newVisibility);
-                    await game.user.setFlag("star-quick-dice", "customDice", pendingCustom);
-                    await game.user.setFlag("star-quick-dice", "barGrid", pendingGrid);
+                    await game.user.setFlag(MODULE_ID, "diceVisibility", newVisibility);
+                    await game.user.setFlag(MODULE_ID, "customDice", pendingCustom);
+                    await game.user.setFlag(MODULE_ID, "barGrid", pendingGrid);
                     if (pendingResetPosition) {
-                        await game.user.unsetFlag("star-quick-dice", "barPosition");
+                        await game.user.unsetFlag(MODULE_ID, "barPosition");
                     }
                     const newBarHidden = $html.find(".sqd-hide-bar-checkbox").prop("checked");
-                    await game.settings.set("star-quick-dice", "barHidden", newBarHidden);
+                    await game.settings.set(MODULE_ID, "barHidden", newBarHidden);
                     if (newBarHidden) diceBar.hide();
                     else              diceBar.show();
                     renderBar(diceBar);
@@ -270,7 +407,7 @@ async function openConfig(diceBar) {
         ],
         render: (event, dialog) => {
             const $html = $(dialog.element);
-            // ── Tab switching ──────────────────────────────────────────────
+
             $html.on("click", ".sqd-tab", (e) => {
                 const tab = e.currentTarget.dataset.tab;
                 $html.find(".sqd-tab").removeClass("sqd-tab-active");
@@ -280,136 +417,10 @@ async function openConfig(diceBar) {
                 if (tab === "layout") renderLayoutEditor($html, pendingGrid);
             });
 
-            // ── Layout tab drag-and-drop ───────────────────────────────────
-            let dragIndex = -1;
-
-            $html.on("dragstart", ".sqd-layout-tile", (e) => {
-                dragIndex = parseInt($(e.currentTarget).data("index"));
-                e.originalEvent.dataTransfer.effectAllowed = "move";
-                setTimeout(() => $(e.currentTarget).addClass("sqd-dragging"), 0);
-            });
-
-            $html.on("dragend", ".sqd-layout-tile", () => {
-                $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-dragging sqd-slot-over");
-                dragIndex = -1;
-            });
-
-            $html.on("dragover", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
-                const idx = parseInt($(e.currentTarget).data("index"));
-                if (dragIndex === -1 || idx === dragIndex) return;
-                e.preventDefault();
-                $html.find(".sqd-layout-tile, .sqd-layout-slot").removeClass("sqd-slot-over");
-                $(e.currentTarget).addClass("sqd-slot-over");
-            });
-
-            $html.on("dragleave", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
-                $(e.currentTarget).removeClass("sqd-slot-over");
-            });
-
-            $html.on("drop", ".sqd-layout-tile, .sqd-layout-slot", (e) => {
-                e.preventDefault();
-                const tgtIdx = parseInt($(e.currentTarget).data("index"));
-                const srcIdx = dragIndex;
-                dragIndex = -1;
-                if (srcIdx === -1 || tgtIdx === srcIdx) return;
-
-                const flat    = pendingGrid.flat();
-                const formula = flat[srcIdx];
-                flat.splice(srcIdx, 1);
-                const adjusted = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
-                flat.splice(Math.min(adjusted, flat.length), 0, formula);
-
-                reshapeGrid(pendingGrid, pendingGrid.length, flat);
-                renderLayoutEditor($html, pendingGrid);
-            });
-
-            $html.on("change", ".sqd-rows-input", (e) => {
-                const flat = pendingGrid.flat();
-                let n = parseInt(e.target.value);
-                if (isNaN(n) || n < 1) n = 1;
-                if (n > flat.length) n = flat.length;
-                $(e.target).val(n);
-                reshapeGrid(pendingGrid, n, flat);
-                renderLayoutEditor($html, pendingGrid);
-            });
-
-            // ── Reset tab ─────────────────────────────────────────────────
-            $html.on("click", ".sqd-reset-position-btn", () => {
-                if (!pendingResetPosition) {
-                    originalPosition = {
-                        left: parseInt(diceBar.css("left")),
-                        top:  parseInt(diceBar.css("top")),
-                    };
-                }
-                pendingResetPosition = true;
-                applyBarPosition(diceBar, null);
-            });
-
-            $html.on("click", ".sqd-reset-dice-btn", () => {
-                pendingResetDice = true;
-                pendingCustom.splice(0);
-                pendingGrid.splice(0, pendingGrid.length, [...BUILT_IN_DICE]);
-                $html.find("tbody tr").has(".sqd-delete-btn").remove();
-                $html.find("tbody input[type=checkbox]").prop("checked", true);
-
-                if (!$html.find("[data-panel='layout']").hasClass("sqd-tab-panel-hidden")) {
-                    renderLayoutEditor($html, pendingGrid);
-                }
-
-                const resetVisibility = Object.fromEntries(BUILT_IN_DICE.map(f => [f, true]));
-                renderBar(diceBar, { customDice: [], grid: [[...BUILT_IN_DICE]], visibility: resetVisibility });
-            });
-
-            // ── Dice tab: delete ──────────────────────────────────────────
-            $html.on("click", ".sqd-delete-btn", (e) => {
-                const row       = $(e.currentTarget).closest("tr");
-                const formula   = row.data("formula");
-                const customIdx = pendingCustom.indexOf(formula);
-                if (customIdx !== -1) {
-                    pendingCustom.splice(customIdx, 1);
-                    for (let r = 0; r < pendingGrid.length; r++) {
-                        const idx = pendingGrid[r].indexOf(formula);
-                        if (idx !== -1) {
-                            pendingGrid[r].splice(idx, 1);
-                            if (pendingGrid[r].length === 0) pendingGrid.splice(r, 1);
-                            break;
-                        }
-                    }
-                }
-                row.remove();
-            });
-
-            // ── Dice tab: add ─────────────────────────────────────────────
-            $html.on("click", ".sqd-add-btn", () => {
-                const input = $html.find(".sqd-formula-input");
-                const raw   = input.val().trim().toLowerCase();
-
-                if (!/^\d+d\d+$/.test(raw)) {
-                    ui.notifications.warn("Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105.");
-                    return;
-                }
-                if ([...BUILT_IN_DICE, ...pendingCustom].includes(raw)) {
-                    ui.notifications.warn(`Star Quick Dice: ${raw} already exists.`);
-                    return;
-                }
-
-                pendingCustom.push(raw);
-                if (pendingGrid.length === 0) pendingGrid.push([raw]);
-                else pendingGrid[pendingGrid.length - 1].push(raw);
-
-                $html.find("tbody").append(makeRow(raw, true));
-                input.val("").focus();
-            });
-
-            $html.on("keydown", ".sqd-formula-input", (e) => {
-                if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
-            });
-
-            // ── Extra tab ─────────────────────────────────────────────────
-            $html.on("change", ".sqd-hide-bar-checkbox", (e) => {
-                if (e.target.checked) diceBar.hide();
-                else                  diceBar.show();
-            });
+            wireLayoutTab($html);
+            wireResetTab($html);
+            wireDiceTab($html);
+            wireExtraTab($html);
         }
     });
 
@@ -422,8 +433,8 @@ async function openConfig(diceBar) {
 }
 
 Hooks.once("init", () => {
-    console.log("Star Quick Dice | Initialized");
-    game.settings.register("star-quick-dice", "barHidden", {
+    console.log(`${MODULE_TITLE} | Initialized`);
+    game.settings.register(MODULE_ID, "barHidden", {
         name: "Hide Button Bar",
         hint: "Remove the button bar from the screen. Toggle this setting to bring it back.",
         scope: "client",
@@ -448,9 +459,13 @@ Hooks.once("ready", () => {
 
     $("body").append(diceBar);
     renderBar(diceBar);
-    applyBarPosition(diceBar);
     initBarDrag(diceBar);
-    if (game.settings.get("star-quick-dice", "barHidden")) diceBar.hide();
+    // Defer until after the browser has laid out the element so outerWidth() is accurate,
+    // which makes the default centred position match what "Reset Position" produces.
+    requestAnimationFrame(() => {
+        applyBarPosition(diceBar);
+        if (game.settings.get(MODULE_ID, "barHidden")) diceBar.hide();
+    });
 
     let configOpen = false;
     diceBar.find(".sqd-config-btn").click(async () => {
@@ -463,6 +478,3 @@ Hooks.once("ready", () => {
         }
     });
 });
-
-if (typeof module !== "undefined") module.exports = {};
-})();

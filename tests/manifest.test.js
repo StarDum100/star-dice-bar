@@ -43,8 +43,12 @@ describe("module.json", () => {
   });
 
   describe("file references", () => {
-    it("all declared scripts exist on disk", () => {
-      for (const script of manifest.scripts ?? []) {
+    it("lists the main script as an ES module", () => {
+      expect(manifest.esmodules).toContain("scripts/main.js");
+    });
+
+    it("all declared esmodules exist on disk", () => {
+      for (const script of manifest.esmodules ?? []) {
         expect(fs.existsSync(path.join(ROOT, script))).toBe(true);
       }
     });
