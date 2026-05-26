@@ -1,7 +1,33 @@
+// IIFE so module-scoped declarations (MODULE_ID, MODULE_TITLE, etc.) never leak into a
+// shared/global scope. Sibling modules each declare `const MODULE_ID`; without this wrapper,
+// loading them in the same realm (e.g. as classic scripts, or a hot-reload re-eval) throws
+// "Identifier 'MODULE_ID' has already been declared".
+(function () {
 const MODULE_ID = "star-quick-dice";
 const MODULE_TITLE = "Star Quick Dice";
 
 const BUILT_IN_DICE = ["1d4", "1d6", "1d8", "1d10", "1d12", "1d20", "1d100"];
+
+const ROLL_MODES = ["normal", "advantage", "disadvantage"];
+const MODE_LABELS = { normal: "Normal", advantage: "Adv", disadvantage: "Dis" };
+
+// A custom die formula: one or more `NdX` dice terms and/or integers joined by + / -,
+// e.g. "1d20", "2d6+3", "1d8+1d6". Leading sign and bare die size (e.g. "d6") are rejected.
+const FORMULA_RE = /^\d+(?:d\d+)?(?:[+-]\d+(?:d\d+)?)*$/;
+function isValidFormula(raw) {
+    return FORMULA_RE.test(raw) && raw.includes("d");
+}
+
+// Advantage/disadvantage doubles each die term and keeps the highest/lowest half,
+// e.g. 1d20 -> 2d20kh1, 2d6 -> 4d6kl2. Flat +/- modifiers are left untouched.
+function buildRollFormula(formula, mode) {
+    if (mode !== "advantage" && mode !== "disadvantage") return formula;
+    const keep = mode === "advantage" ? "kh" : "kl";
+    return formula.replace(/(\d+)d(\d+)/gi, (_match, count, faces) => {
+        const n = parseInt(count, 10);
+        return `${n * 2}d${faces}${keep}${n}`;
+    });
+}
 
 function escapeHtml(str) {
     return String(str)
@@ -13,19 +39,27 @@ function escapeHtml(str) {
 }
 
 function getCustomDice() {
-    return game.user.getFlag(MODULE_ID, "customDice") ?? [];
+    const saved = game.user.getFlag(MODULE_ID, "customDice") ?? [];
+    // Legacy saved data stored plain formula strings; normalize to { formula, label }.
+    return saved.map(d => typeof d === "string"
+        ? { formula: d, label: "" }
+        : { formula: d?.formula ?? "", label: d?.label ?? "" });
+}
+
+function customFormulas(customDice = getCustomDice()) {
+    return customDice.map(d => d.formula);
 }
 
 function getBarGrid(customDice = getCustomDice()) {
     const saved = game.user.getFlag(MODULE_ID, "barGrid");
     if (saved?.length) return saved;
-    return [[...BUILT_IN_DICE, ...customDice]];
+    return [[...BUILT_IN_DICE, ...customFormulas(customDice)]];
 }
 
 function getVisibility(customDice = getCustomDice()) {
     const saved = game.user.getFlag(MODULE_ID, "diceVisibility") ?? {};
     const visibility = {};
-    for (const formula of [...BUILT_IN_DICE, ...customDice]) {
+    for (const formula of [...BUILT_IN_DICE, ...customFormulas(customDice)]) {
         visibility[formula] = saved[formula] !== false;
     }
     return visibility;
@@ -66,13 +100,17 @@ function initBarDrag(diceBar) {
     });
 }
 
-function makeRollClickHandler(formula) {
+function makeRollClickHandler(diceBar, formula, label = "") {
     return async () => {
-        const roll = new Roll(formula);
+        const mode = diceBar.data("rollMode") || "normal";
+        const roll = new Roll(buildRollFormula(formula, mode));
         await roll.evaluate();
+        let flavor = `Quick Roll: ${label ? `${label} (${formula})` : formula}`;
+        if (mode === "advantage")         flavor += " — Advantage";
+        else if (mode === "disadvantage") flavor += " — Disadvantage";
         roll.toMessage({
             speaker: ChatMessage.getSpeaker(),
-            flavor: `Quick Roll: ${formula}`,
+            flavor,
         });
     };
 }
@@ -81,7 +119,8 @@ function renderBar(diceBar, overrides = {}) {
     const customDice = overrides.customDice ?? getCustomDice();
     const grid       = overrides.grid       ?? getBarGrid(customDice);
     const visibility = overrides.visibility ?? getVisibility(customDice);
-    const knownDice  = new Set([...BUILT_IN_DICE, ...customDice]);
+    const knownDice  = new Set([...BUILT_IN_DICE, ...customFormulas(customDice)]);
+    const labels     = new Map(customDice.map(d => [d.formula, d.label]));
     const gridEl = diceBar.find(".sqd-dice-grid");
     gridEl.empty();
     const multirow = grid.length > 1;
@@ -97,9 +136,13 @@ function renderBar(diceBar, overrides = {}) {
         const rowEl = $('<div class="sqd-bar-row">');
         row.forEach(formula => {
             if (!knownDice.has(formula)) return;
-            const btn = $("<button>").attr("data-roll", formula).text(formula);
+            const label = labels.get(formula) || "";
+            const btn = $("<button>")
+                .attr("data-roll", formula)
+                .attr("title", formula)
+                .text(label || formula);
             if (!visibility[formula]) btn.hide();
-            btn.click(makeRollClickHandler(formula));
+            btn.click(makeRollClickHandler(diceBar, formula, label));
             rowEl.append(btn);
         });
         gridEl.append(rowEl);
@@ -167,8 +210,9 @@ async function openConfig(diceBar) {
     let originalPosition     = null;
     let pendingResetDice     = false;
 
-    function makeRow(formula, isCustom) {
-        const safe    = escapeHtml(formula);
+    function makeRow(formula, isCustom, label = "") {
+        const safe      = escapeHtml(formula);
+        const safeLabel = escapeHtml(label);
         const checked = savedVisibility[formula] !== false ? "checked" : "";
         const deleteBtn = isCustom
             ? `<button type="button" class="sqd-delete-btn">&#10005;</button>`
@@ -176,6 +220,7 @@ async function openConfig(diceBar) {
         return `
             <tr data-formula="${safe}">
                 <td>${safe}</td>
+                <td class="sqd-nick-cell">${safeLabel}</td>
                 <td class="sqd-checkbox-cell"><input type="checkbox" name="${safe}" ${checked}></td>
                 <td class="sqd-delete-cell">${deleteBtn}</td>
             </tr>
@@ -268,7 +313,7 @@ async function openConfig(diceBar) {
         $html.on("click", ".sqd-delete-btn", (e) => {
             const row       = $(e.currentTarget).closest("tr");
             const formula   = row.data("formula");
-            const customIdx = pendingCustom.indexOf(formula);
+            const customIdx = pendingCustom.findIndex(d => d.formula === formula);
             if (customIdx !== -1) {
                 pendingCustom.splice(customIdx, 1);
                 for (let r = 0; r < pendingGrid.length; r++) {
@@ -284,27 +329,30 @@ async function openConfig(diceBar) {
         });
 
         $html.on("click", ".sqd-add-btn", () => {
-            const input = $html.find(".sqd-formula-input");
-            const raw   = input.val().trim().toLowerCase();
+            const input     = $html.find(".sqd-formula-input");
+            const nickInput = $html.find(".sqd-nick-input");
+            const raw  = input.val().trim().toLowerCase().replace(/\s+/g, "");
+            const nick = nickInput.val().trim();
 
-            if (!/^\d+d\d+$/.test(raw)) {
-                ui.notifications.warn(`${MODULE_TITLE}: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105.`);
+            if (!isValidFormula(raw)) {
+                ui.notifications.warn(`${MODULE_TITLE}: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6.`);
                 return;
             }
-            if ([...BUILT_IN_DICE, ...pendingCustom].includes(raw)) {
+            if ([...BUILT_IN_DICE, ...customFormulas(pendingCustom)].includes(raw)) {
                 ui.notifications.warn(`${MODULE_TITLE}: ${raw} already exists.`);
                 return;
             }
 
-            pendingCustom.push(raw);
+            pendingCustom.push({ formula: raw, label: nick });
             if (pendingGrid.length === 0) pendingGrid.push([raw]);
             else pendingGrid[pendingGrid.length - 1].push(raw);
 
-            $html.find("tbody").append(makeRow(raw, true));
+            $html.find("tbody").append(makeRow(raw, true, nick));
             input.val("").focus();
+            nickInput.val("");
         });
 
-        $html.on("keydown", ".sqd-formula-input", (e) => {
+        $html.on("keydown", ".sqd-formula-input, .sqd-nick-input", (e) => {
             if (e.key === "Enter") $html.find(".sqd-add-btn").trigger("click");
         });
     }
@@ -316,8 +364,9 @@ async function openConfig(diceBar) {
         });
     }
 
-    const allDice = new Set([...BUILT_IN_DICE, ...pendingCustom]);
-    const flatDice = pendingGrid.flat().filter(f => allDice.has(f));
+    const allDice      = new Set([...BUILT_IN_DICE, ...customFormulas(pendingCustom)]);
+    const customLabels = new Map(pendingCustom.map(d => [d.formula, d.label]));
+    const flatDice     = pendingGrid.flat().filter(f => allDice.has(f));
 
     const content = `
         <div class="sqd-tabs">
@@ -329,16 +378,17 @@ async function openConfig(diceBar) {
         <div class="sqd-tab-panel" data-panel="dice">
             <table class="sqd-config-table">
                 <thead>
-                    <tr><th>Dice</th><th>Visible</th><th></th></tr>
+                    <tr><th>Dice</th><th>Name</th><th>Visible</th><th></th></tr>
                 </thead>
                 <tbody>
                     ${flatDice.map(formula =>
-                        makeRow(formula, pendingCustom.includes(formula))
+                        makeRow(formula, customLabels.has(formula), customLabels.get(formula))
                     ).join("")}
                 </tbody>
             </table>
             <div class="sqd-add-row">
-                <input type="text" class="sqd-formula-input" placeholder="e.g. 2d6, 1d105">
+                <input type="text" class="sqd-formula-input" placeholder="Formula e.g. 1d20, 2d6+3">
+                <input type="text" class="sqd-nick-input" placeholder="Nickname (optional)">
                 <button type="button" class="sqd-add-btn">Add</button>
             </div>
         </div>
@@ -452,10 +502,24 @@ Hooks.once("ready", () => {
     const diceBar = $(`<div class="sqd-dice-bar">
         <div class="sqd-bar-controls">
             <span class="sqd-bar-handle" title="Drag to move bar">&#8801;</span>
+            <button class="sqd-mode-btn sqd-mode-normal" data-mode="normal" title="Roll mode: click to cycle Normal / Advantage / Disadvantage">Normal</button>
             <button class="sqd-config-btn" title="Configure Dice">&#9881;</button>
         </div>
         <div class="sqd-dice-grid"></div>
     </div>`);
+
+    diceBar.data("rollMode", "normal");
+    const modeBtn = diceBar.find(".sqd-mode-btn");
+    modeBtn.on("click", () => {
+        const current = diceBar.data("rollMode") || "normal";
+        const next = ROLL_MODES[(ROLL_MODES.indexOf(current) + 1) % ROLL_MODES.length];
+        diceBar.data("rollMode", next);
+        modeBtn
+            .text(MODE_LABELS[next])
+            .attr("data-mode", next)
+            .removeClass("sqd-mode-normal sqd-mode-advantage sqd-mode-disadvantage")
+            .addClass(`sqd-mode-${next}`);
+    });
 
     $("body").append(diceBar);
     renderBar(diceBar);
@@ -478,3 +542,6 @@ Hooks.once("ready", () => {
         }
     });
 });
+
+if (typeof module !== "undefined") module.exports = {};
+})();

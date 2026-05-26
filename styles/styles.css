@@ -59,12 +59,22 @@
 
 .sqd-config-btn:hover { opacity: 1; }
 
-/* Single-row: controls wrapper is transparent so handle/config participate
-   directly in the bar's flex layout, ordered handle | dice | config */
+.sqd-mode-btn {
+    font-size: 11px;
+    min-width: 54px;
+    text-align: center;
+}
+
+.sqd-mode-btn.sqd-mode-advantage    { border-color: #4a8a4a; color: #9f9; }
+.sqd-mode-btn.sqd-mode-disadvantage { border-color: #8a4a4a; color: #f99; }
+
+/* Single-row: controls wrapper is transparent so handle/mode/config participate
+   directly in the bar's flex layout, ordered handle | mode | dice | config */
 .sqd-bar-controls { display: contents; }
 .sqd-bar-handle   { order: 1; }
-.sqd-dice-grid    { order: 2; }
-.sqd-config-btn   { order: 3; }
+.sqd-mode-btn     { order: 2; }
+.sqd-dice-grid    { order: 3; }
+.sqd-config-btn   { order: 4; }
 
 /* Multi-row: controls become a stacked column pinned to the top-left */
 .sqd-dice-bar.sqd-bar-multirow .sqd-bar-controls {
@@ -160,6 +170,19 @@
     height: 28px;
     box-sizing: border-box;
 }
+
+.sqd-nick-input {
+    flex: 2;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: white;
+    padding: 0 8px;
+    height: 28px;
+    box-sizing: border-box;
+}
+
+.sqd-nick-cell { color: #ccc; }
 
 .sqd-add-btn {
     flex: 1;

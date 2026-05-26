@@ -439,64 +439,63 @@ describe("Star Quick Dice", () => {
     it("warns with the correct message when the formula is empty", () => {
       attemptAdd("");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula has no digits", () => {
       attemptAdd("abc");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula is missing the die size", () => {
       attemptAdd("2d");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula is missing the multiplier", () => {
       attemptAdd("d6");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula contains special characters", () => {
       attemptAdd("2d!!");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula contains a script injection attempt", () => {
       attemptAdd("<script>alert(1)</script>");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula has a negative multiplier", () => {
       attemptAdd("-1d6");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
     it("warns when the formula has a negative die size", () => {
       attemptAdd("1d-6");
       expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
+        "Star Quick Dice: Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6."
       );
     });
 
-    it("warns when the formula contains arithmetic", () => {
+    it("accepts a formula containing arithmetic", () => {
       attemptAdd("2d6-1");
-      expect(global.ui.notifications.warn).toHaveBeenCalledWith(
-        "Star Quick Dice: Invalid add dice format. Use format NdX, e.g. 2d6 or 1d105."
-      );
+      expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+      expect(html.find('tr[data-formula="2d6-1"]').length).toBe(1);
     });
 
     it("warns when a valid formula already exists", () => {
@@ -1146,6 +1145,215 @@ describe("Star Quick Dice", () => {
       document.querySelector('[data-roll="1d6"]').click();
       await new Promise(r => setTimeout(r, 0));
       expect(global.Roll).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("formula custom dice", () => {
+    let html;
+    beforeEach(() => {
+      global.ui.notifications.warn.mockClear();
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      ({ html } = openDialogHtml());
+    });
+
+    function addDie(formula, nick) {
+      html.find(".sqd-formula-input").val(formula);
+      if (nick !== undefined) html.find(".sqd-nick-input").val(nick);
+      html.find(".sqd-add-btn").trigger("click");
+    }
+
+    it("accepts a flat-modifier formula (1d6+2)", () => {
+      addDie("1d6+2");
+      expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+      expect(html.find('tr[data-formula="1d6+2"]').length).toBe(1);
+    });
+
+    it("accepts a multi-dice formula (1d6+2d6)", () => {
+      addDie("1d6+2d6");
+      expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+      expect(html.find('tr[data-formula="1d6+2d6"]').length).toBe(1);
+    });
+
+    it("strips spaces from the entered formula", () => {
+      addDie("1d6 + 2");
+      expect(html.find('tr[data-formula="1d6+2"]').length).toBe(1);
+    });
+
+    it("rejects a bare die size (d6)", () => {
+      addDie("d6");
+      expect(global.ui.notifications.warn).toHaveBeenCalled();
+    });
+
+    it("rejects a leading sign (-1d6)", () => {
+      addDie("-1d6");
+      expect(global.ui.notifications.warn).toHaveBeenCalled();
+    });
+
+    it("rejects a formula with no dice (5+3)", () => {
+      addDie("5+3");
+      expect(global.ui.notifications.warn).toHaveBeenCalled();
+    });
+  });
+
+  describe("roll modes (advantage / disadvantage)", () => {
+    let mockRoll;
+    beforeEach(() => {
+      mockRoll = { evaluate: jest.fn().mockResolvedValue(undefined), toMessage: jest.fn() };
+      global.Roll.mockClear();
+      global.Roll.mockImplementation(() => mockRoll);
+      setupBar();
+    });
+
+    it("defaults to Normal mode", () => {
+      expect(document.querySelector(".sqd-mode-btn").textContent.trim()).toBe("Normal");
+    });
+
+    it("cycles Normal -> Adv -> Dis -> Normal on click", () => {
+      const btn = document.querySelector(".sqd-mode-btn");
+      btn.click();
+      expect(btn.textContent.trim()).toBe("Adv");
+      expect(btn.classList.contains("sqd-mode-advantage")).toBe(true);
+      btn.click();
+      expect(btn.textContent.trim()).toBe("Dis");
+      expect(btn.classList.contains("sqd-mode-disadvantage")).toBe(true);
+      btn.click();
+      expect(btn.textContent.trim()).toBe("Normal");
+      expect(btn.classList.contains("sqd-mode-normal")).toBe(true);
+    });
+
+    it("rolls the formula unchanged in Normal mode", () => {
+      document.querySelector('[data-roll="1d20"]').click();
+      expect(global.Roll).toHaveBeenCalledWith("1d20");
+    });
+
+    it("doubles each die and keeps highest in Advantage mode", () => {
+      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector('[data-roll="1d20"]').click();
+      expect(global.Roll).toHaveBeenCalledWith("2d20kh1");
+    });
+
+    it("doubles each die and keeps lowest in Disadvantage mode", () => {
+      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector('[data-roll="1d6"]').click();
+      expect(global.Roll).toHaveBeenCalledWith("2d6kl1");
+    });
+
+    it("leaves flat modifiers untouched while doubling dice in Advantage mode", () => {
+      setupBar({ customDice: [{ formula: "2d6+3", label: "" }] });
+      global.Roll.mockClear();
+      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector('[data-roll="2d6+3"]').click();
+      expect(global.Roll).toHaveBeenCalledWith("4d6kh2+3");
+    });
+
+    it("notes Advantage in the chat flavor", async () => {
+      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector('[data-roll="1d20"]').click();
+      await new Promise(r => setTimeout(r, 0));
+      expect(mockRoll.toMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ flavor: "Quick Roll: 1d20 — Advantage" })
+      );
+    });
+
+    it("notes Disadvantage in the chat flavor", async () => {
+      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector(".sqd-mode-btn").click();
+      document.querySelector('[data-roll="1d20"]').click();
+      await new Promise(r => setTimeout(r, 0));
+      expect(mockRoll.toMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ flavor: "Quick Roll: 1d20 — Disadvantage" })
+      );
+    });
+  });
+
+  describe("custom dice nicknames", () => {
+    it("shows the nickname as the button label with the formula as tooltip", () => {
+      setupBar({ customDice: [{ formula: "2d6+3", label: "Fireball" }] });
+      const btn = document.querySelector('[data-roll="2d6+3"]');
+      expect(btn).not.toBeNull();
+      expect(btn.textContent.trim()).toBe("Fireball");
+      expect(btn.getAttribute("title")).toBe("2d6+3");
+    });
+
+    it("falls back to the formula when no nickname is set", () => {
+      setupBar({ customDice: [{ formula: "2d6+3", label: "" }] });
+      expect(document.querySelector('[data-roll="2d6+3"]').textContent.trim()).toBe("2d6+3");
+    });
+
+    it("still renders legacy string-format saved dice", () => {
+      setupBar({ customDice: ["1d105"] });
+      const btn = document.querySelector('[data-roll="1d105"]');
+      expect(btn).not.toBeNull();
+      expect(btn.textContent.trim()).toBe("1d105");
+    });
+
+    it("includes the nickname and formula in the chat flavor", async () => {
+      const mockRoll = { evaluate: jest.fn().mockResolvedValue(undefined), toMessage: jest.fn() };
+      global.Roll.mockImplementation(() => mockRoll);
+      setupBar({ customDice: [{ formula: "2d6+3", label: "Fireball" }] });
+      document.querySelector('[data-roll="2d6+3"]').click();
+      await new Promise(r => setTimeout(r, 0));
+      expect(mockRoll.toMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ flavor: "Quick Roll: Fireball (2d6+3)" })
+      );
+    });
+
+    it("shows the nickname in the config table Name column", () => {
+      setupBar({ customDice: [{ formula: "2d6+3", label: "Fireball" }] });
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      expect(html.find('tr[data-formula="2d6+3"] .sqd-nick-cell').text().trim()).toBe("Fireball");
+    });
+
+    it("persists a nickname entered in the add form on Save", async () => {
+      setupBar();
+      document.querySelector(".sqd-config-btn").click();
+      const { options } = openDialogHtml();
+      const instance = global.foundry.applications.api.DialogV2.__lastInstance;
+      const localHtml = $(instance.element);
+      localHtml.find(".sqd-formula-input").val("2d6+3");
+      localHtml.find(".sqd-nick-input").val("Fireball");
+      localHtml.find(".sqd-add-btn").trigger("click");
+      global.game.user.setFlag.mockClear();
+      const saveBtn = options.buttons.find(b => b.action === "save");
+      await saveBtn.callback(null, null, { element: instance.element });
+      expect(global.game.user.setFlag).toHaveBeenCalledWith(
+        "star-quick-dice", "customDice",
+        expect.arrayContaining([{ formula: "2d6+3", label: "Fireball" }])
+      );
+    });
+  });
+
+  describe("nickname XSS", () => {
+    it("does not execute a script tag injected as a nickname (config table)", () => {
+      window.__xssNickScript = undefined;
+      setupBar({ customDice: [{ formula: "1d6+2", label: '<script>window.__xssNickScript=true</script>' }] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      expect(window.__xssNickScript).toBeUndefined();
+    });
+
+    it("does not execute an event-handler payload injected as a nickname (config table)", () => {
+      window.__xssNickAttr = undefined;
+      setupBar({ customDice: [{ formula: "1d6+2", label: '" onmouseover="window.__xssNickAttr=true' }] });
+      document.querySelector(".sqd-config-btn").click();
+      openDialogHtml();
+      expect(window.__xssNickAttr).toBeUndefined();
+    });
+
+    it("does not execute an img onerror payload injected as a nickname (bar button)", () => {
+      window.__xssNickImg = undefined;
+      setupBar({ customDice: [{ formula: "1d6+2", label: '<img src=x onerror="window.__xssNickImg=true">' }] });
+      expect(window.__xssNickImg).toBeUndefined();
+    });
+
+    it("renders an HTML-character nickname as literal text in the table", () => {
+      setupBar({ customDice: [{ formula: "1d6+2", label: '<b>boom</b>' }] });
+      document.querySelector(".sqd-config-btn").click();
+      const { html } = openDialogHtml();
+      expect(html.find('tr[data-formula="1d6+2"] .sqd-nick-cell').text()).toBe('<b>boom</b>');
     });
   });
 });
