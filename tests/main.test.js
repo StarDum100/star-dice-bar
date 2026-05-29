@@ -54,7 +54,7 @@ global.foundry.applications.api.DialogV2.wait = jest.fn().mockImplementation((op
 });
 global.requestAnimationFrame = cb => cb();
 
-require("../scripts/main.js");
+const { commitDiceEdits, makeRow } = require("../scripts/main.js");
 
 // -- Helpers -----------------------------------------------------------------
 
@@ -1694,5 +1694,107 @@ describe("Star Dice Bar", () => {
         expect.arrayContaining([expect.arrayContaining(["1d6"])])
       );
     });
+  });
+});
+
+// Direct unit tests for the extracted two-phase commit. These build a Dice-tab <tbody> from
+// the real makeRow() output, simulate edits by setting input values, then call commitDiceEdits
+// against the same pendingCustom/pendingGrid it mutates in place — exercising the validation,
+// key-remap, and collision branches without going through the whole dialog.
+describe("commitDiceEdits (two-phase commit)", () => {
+  // dice: [{ formula, label? }] -> { $html, pendingCustom, pendingGrid } in saved-grid order.
+  function fixture(dice) {
+    const pendingCustom = dice.map(d => ({ formula: d.formula, label: d.label ?? "" }));
+    const keyOf = d => (d.label ? `${d.formula}|${d.label}` : d.formula);
+    const pendingGrid = [pendingCustom.map(keyOf)];
+    const rowsHtml = pendingCustom.map(d => makeRow(d.formula, d.label, {})).join("");
+    const container = document.createElement("div");
+    container.innerHTML = `<table><tbody>${rowsHtml}</tbody></table>`;
+    return { $html: $(container), pendingCustom, pendingGrid };
+  }
+
+  const rowByKey = ($html, key) => $html.find(`tr[data-key="${key}"]`);
+
+  beforeEach(() => { global.ui.notifications.warn.mockClear(); });
+
+  it("returns each die visible by default and leaves data unchanged when nothing is edited", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }, { formula: "2d6", label: "Fire" }]);
+    const visibility = commitDiceEdits($html, pendingCustom, pendingGrid);
+
+    expect(visibility).toEqual({ "1d20": true, "2d6|Fire": true });
+    expect(pendingCustom).toEqual([{ formula: "1d20", label: "" }, { formula: "2d6", label: "Fire" }]);
+    expect(pendingGrid).toEqual([["1d20", "2d6|Fire"]]);
+    expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+  });
+
+  it("records false visibility for an unchecked row", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }]);
+    rowByKey($html, "1d20").find("input[type=checkbox]").prop("checked", false);
+    expect(commitDiceEdits($html, pendingCustom, pendingGrid)).toEqual({ "1d20": false });
+  });
+
+  it("commits a valid formula edit and remaps the grid key", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }]);
+    rowByKey($html, "1d20").find(".sdb-formula-cell-input").val("1d8");
+    const visibility = commitDiceEdits($html, pendingCustom, pendingGrid);
+
+    expect(pendingCustom).toEqual([{ formula: "1d8", label: "" }]);
+    expect(pendingGrid).toEqual([["1d8"]]);
+    expect(visibility).toEqual({ "1d8": true });
+    expect(global.ui.notifications.warn).not.toHaveBeenCalled();
+  });
+
+  it("normalizes whitespace/case in an edited formula", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }]);
+    rowByKey($html, "1d20").find(".sdb-formula-cell-input").val("  2D6 + 3 ");
+    commitDiceEdits($html, pendingCustom, pendingGrid);
+    expect(pendingCustom).toEqual([{ formula: "2d6+3", label: "" }]);
+    expect(pendingGrid).toEqual([["2d6+3"]]);
+  });
+
+  it("treats a label change as a new key and remaps the grid", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }]);
+    rowByKey($html, "1d20").find(".sdb-label-cell-input").val("Attack");
+    const visibility = commitDiceEdits($html, pendingCustom, pendingGrid);
+
+    expect(pendingCustom).toEqual([{ formula: "1d20", label: "Attack" }]);
+    expect(pendingGrid).toEqual([["1d20|Attack"]]);
+    expect(visibility).toEqual({ "1d20|Attack": true });
+  });
+
+  it("keeps the original (warns) when an edit makes the formula invalid", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }]);
+    rowByKey($html, "1d20").find(".sdb-formula-cell-input").val("notdice");
+    const visibility = commitDiceEdits($html, pendingCustom, pendingGrid);
+
+    expect(pendingCustom).toEqual([{ formula: "1d20", label: "" }]);
+    expect(pendingGrid).toEqual([["1d20"]]);
+    expect(visibility).toEqual({ "1d20": true });
+    expect(global.ui.notifications.warn).toHaveBeenCalledWith(expect.stringContaining("keeping original"));
+  });
+
+  it("keeps the original (warns) when an edit collides with another row's unchanged key", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }, { formula: "2d6" }]);
+    // Edit the second row's formula to collide with the first row, which stays put.
+    rowByKey($html, "2d6").find(".sdb-formula-cell-input").val("1d20");
+    const visibility = commitDiceEdits($html, pendingCustom, pendingGrid);
+
+    expect(pendingCustom).toEqual([{ formula: "1d20", label: "" }, { formula: "2d6", label: "" }]);
+    expect(pendingGrid).toEqual([["1d20", "2d6"]]);
+    expect(visibility).toEqual({ "1d20": true, "2d6": true });
+    expect(global.ui.notifications.warn).toHaveBeenCalledWith(expect.stringContaining("already exists"));
+  });
+
+  it("keeps the second of two rows edited to the same new key (already-committed collision)", () => {
+    const { $html, pendingCustom, pendingGrid } = fixture([{ formula: "1d20" }, { formula: "2d6" }]);
+    rowByKey($html, "1d20").find(".sdb-formula-cell-input").val("1d12");
+    rowByKey($html, "2d6").find(".sdb-formula-cell-input").val("1d12");
+    const visibility = commitDiceEdits($html, pendingCustom, pendingGrid);
+
+    // First row wins the new key; the second is kept under its original key with a warning.
+    expect(pendingCustom).toEqual([{ formula: "1d12", label: "" }, { formula: "2d6", label: "" }]);
+    expect(pendingGrid).toEqual([["1d12", "2d6"]]);
+    expect(visibility).toEqual({ "1d12": true, "2d6": true });
+    expect(global.ui.notifications.warn).toHaveBeenCalledWith(expect.stringContaining("already exists"));
   });
 });

@@ -229,6 +229,148 @@ function reshapeGrid(pendingGrid, numRows, flat = pendingGrid.flat()) {
     }
 }
 
+// Builds one editable Dice-tab row. `savedVisibility` seeds the checkbox state; an unknown
+// key defaults to visible. Each row gets a delete button.
+function makeRow(formula, label = "", savedVisibility = {}) {
+    const key       = dieKey(formula, label);
+    const safe      = escapeHtml(formula);
+    const safeLabel = escapeHtml(label);
+    const safeKey   = escapeHtml(key);
+    const checked   = savedVisibility[key] !== false ? "checked" : "";
+    return `
+        <tr data-formula="${safe}" data-key="${safeKey}">
+            <td><input type="text" class="sdb-formula-cell-input" value="${safe}"></td>
+            <td><input type="text" class="sdb-label-cell-input" value="${safeLabel}"></td>
+            <td class="sdb-checkbox-cell"><input type="checkbox" name="${safeKey}" ${checked}></td>
+            <td class="sdb-delete-cell"><button type="button" class="sdb-delete-btn">&#10005;</button></td>
+        </tr>
+    `;
+}
+
+// Assembles the full config-dialog inner HTML (the four tabs and their panels). Rows are
+// rendered in saved-grid order, skipping any grid key without a matching custom die.
+function buildConfigContent(pendingCustom, pendingGrid, barHidden, savedVisibility) {
+    const allKeys   = new Set(dieKeys(pendingCustom));
+    const diceByKey = new Map(pendingCustom.map(d => [dieKey(d.formula, d.label), d]));
+    const flatKeys  = pendingGrid.flat().filter(k => allKeys.has(k));
+
+    return `
+        <div class="sdb-tabs">
+            <button type="button" class="sdb-tab sdb-tab-active" data-tab="dice">${translate("Tab.Dice")}</button>
+            <button type="button" class="sdb-tab" data-tab="layout">${translate("Tab.Layout")}</button>
+            <button type="button" class="sdb-tab" data-tab="reset">${translate("Tab.Reset")}</button>
+            <button type="button" class="sdb-tab" data-tab="extra">${translate("Tab.Extra")}</button>
+        </div>
+        <div class="sdb-tab-panel" data-panel="dice">
+            <table class="sdb-config-table">
+                <thead>
+                    <tr><th>${translate("Table.Formula")}</th><th>${translate("Table.Label")}</th><th>${translate("Table.Visible")}</th><th></th></tr>
+                </thead>
+                <tbody>
+                    ${flatKeys.map(key => {
+                        const die = diceByKey.get(key);
+                        return makeRow(die.formula, die.label, savedVisibility);
+                    }).join("")}
+                </tbody>
+            </table>
+            <div class="sdb-add-row">
+                <input type="text" class="sdb-formula-input" placeholder="${escapeHtml(translate("AddForm.FormulaPlaceholder"))}">
+                <input type="text" class="sdb-label-input" placeholder="${escapeHtml(translate("AddForm.LabelPlaceholder"))}">
+                <button type="button" class="sdb-add-btn">${translate("AddForm.AddButton")}</button>
+            </div>
+        </div>
+        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="layout"></div>
+        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="extra">
+            <div class="sdb-extra-panel">
+                <label class="sdb-extra-item">
+                    <input type="checkbox" class="sdb-hide-bar-checkbox"${barHidden ? " checked" : ""}>
+                    <div>
+                        <strong>${translate("Extra.HideBarTitle")}</strong>
+                        <p>${translate("Extra.HideBarDesc")}</p>
+                        <p>${translate("Extra.HideBarRestore")}</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="reset">
+            <div class="sdb-reset-panel">
+                <div class="sdb-reset-item">
+                    <div>
+                        <strong>${translate("Reset.PositionTitle")}</strong>
+                        <p>${translate("Reset.PositionDesc")}</p>
+                    </div>
+                    <button type="button" class="sdb-reset-position-btn">${translate("Reset.PositionButton")}</button>
+                </div>
+                <div class="sdb-reset-item">
+                    <div>
+                        <strong>${translate("Reset.ClearTitle")}</strong>
+                        <p>${translate("Reset.ClearDesc")}</p>
+                    </div>
+                    <button type="button" class="sdb-clear-dice-btn">${translate("Reset.ClearButton")}</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Two-phase commit of the Dice tab's edited rows into pendingCustom / pendingGrid.
+// Phase 1 reads every row and validates; an invalid formula keeps the original (warned).
+// Phase 2 commits each valid edit that doesn't collide with a kept original or a key already
+// committed by an earlier row (warned on collision). Mutates pendingCustom and pendingGrid in
+// place and returns the new visibility map keyed by each row's resolved die key.
+function commitDiceEdits($html, pendingCustom, pendingGrid) {
+    // Phase 1: read all rows; warn on invalid formulas per-row but keep going.
+    const rowData = [];
+    $html.find("tbody tr").each(function () {
+        const $row      = $(this);
+        const oldKey    = $row.data("key");
+        const newRaw    = $row.find(".sdb-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
+        const newLabel  = $row.find(".sdb-label-cell-input").val().trim();
+        const checked   = $row.find("input[type=checkbox]").prop("checked");
+        const formulaOk = isValidFormula(newRaw);
+        const newKey    = dieKey(newRaw, newLabel);
+        if (!formulaOk) {
+            notify("Notify.InvalidKeepOriginal", { formula: newRaw });
+        }
+        rowData.push({ oldKey, newRaw, newLabel, newKey, checked, formulaOk });
+    });
+
+    // Originals that won't vacate: invalid edit, or key not actually changed.
+    // Any valid edit targeting one of these keys would create a duplicate.
+    const keepOriginalKeys = new Set(
+        rowData.filter(r => !r.formulaOk || r.newKey === r.oldKey).map(r => r.oldKey)
+    );
+
+    // Phase 2: commit each valid edit that doesn't collide with a kept original
+    // or an already-committed key from an earlier row.
+    const committed     = new Set();
+    const keyMap        = new Map();
+    const newVisibility = {};
+
+    for (const row of rowData) {
+        let resolvedKey = row.oldKey;
+        if (row.formulaOk) {
+            if (row.newKey !== row.oldKey && keepOriginalKeys.has(row.newKey)) {
+                notify("Notify.AlreadyExistsKeepOriginal", { die: dieDisplay(row.newRaw, row.newLabel) });
+            } else if (committed.has(row.newKey)) {
+                notify("Notify.AlreadyExistsKeepOriginal", { die: dieDisplay(row.newRaw, row.newLabel) });
+            } else {
+                resolvedKey = row.newKey;
+                const entry = pendingCustom.find(d => dieKey(d.formula, d.label) === row.oldKey);
+                if (entry) { entry.formula = row.newRaw; entry.label = row.newLabel; }
+                if (resolvedKey !== row.oldKey) keyMap.set(row.oldKey, resolvedKey);
+            }
+        }
+        committed.add(resolvedKey);
+        newVisibility[resolvedKey] = row.checked;
+    }
+    for (let r = 0; r < pendingGrid.length; r++) {
+        pendingGrid[r] = pendingGrid[r].map(k => keyMap.get(k) ?? k);
+    }
+
+    return newVisibility;
+}
+
 async function openConfig(diceBar) {
     const savedVisibility = game.user.getFlag(MODULE_ID, "diceVisibility") ?? {};
     const barHidden       = game.settings.get(MODULE_ID, "barHidden");
@@ -239,25 +381,6 @@ async function openConfig(diceBar) {
     let pendingResetPosition = false;
     let originalPosition     = null;
     let pendingResetDice     = false;
-
-    function makeRow(formula, isCustom, label = "") {
-        const key       = dieKey(formula, label);
-        const safe      = escapeHtml(formula);
-        const safeLabel = escapeHtml(label);
-        const safeKey   = escapeHtml(key);
-        const checked   = savedVisibility[key] !== false ? "checked" : "";
-        const deleteBtn = isCustom
-            ? `<button type="button" class="sdb-delete-btn">&#10005;</button>`
-            : "";
-        return `
-            <tr data-formula="${safe}" data-key="${safeKey}">
-                <td><input type="text" class="sdb-formula-cell-input" value="${safe}"></td>
-                <td><input type="text" class="sdb-label-cell-input" value="${safeLabel}"></td>
-                <td class="sdb-checkbox-cell"><input type="checkbox" name="${safeKey}" ${checked}></td>
-                <td class="sdb-delete-cell">${deleteBtn}</td>
-            </tr>
-        `;
-    }
 
     function wireLayoutTab($html) {
         let dragIndex = -1;
@@ -378,7 +501,7 @@ async function openConfig(diceBar) {
             if (pendingGrid.length === 0) pendingGrid.push([key]);
             else pendingGrid[pendingGrid.length - 1].push(key);
 
-            $html.find("tbody").append(makeRow(raw, true, label));
+            $html.find("tbody").append(makeRow(raw, label, savedVisibility));
             input.val("").focus();
             labelInput.val("");
         });
@@ -395,67 +518,7 @@ async function openConfig(diceBar) {
         });
     }
 
-    const allKeys   = new Set(dieKeys(pendingCustom));
-    const diceByKey = new Map(pendingCustom.map(d => [dieKey(d.formula, d.label), d]));
-    const flatKeys  = pendingGrid.flat().filter(k => allKeys.has(k));
-
-    const content = `
-        <div class="sdb-tabs">
-            <button type="button" class="sdb-tab sdb-tab-active" data-tab="dice">${translate("Tab.Dice")}</button>
-            <button type="button" class="sdb-tab" data-tab="layout">${translate("Tab.Layout")}</button>
-            <button type="button" class="sdb-tab" data-tab="reset">${translate("Tab.Reset")}</button>
-            <button type="button" class="sdb-tab" data-tab="extra">${translate("Tab.Extra")}</button>
-        </div>
-        <div class="sdb-tab-panel" data-panel="dice">
-            <table class="sdb-config-table">
-                <thead>
-                    <tr><th>${translate("Table.Formula")}</th><th>${translate("Table.Label")}</th><th>${translate("Table.Visible")}</th><th></th></tr>
-                </thead>
-                <tbody>
-                    ${flatKeys.map(key => {
-                        const die = diceByKey.get(key);
-                        return makeRow(die.formula, true, die.label);
-                    }).join("")}
-                </tbody>
-            </table>
-            <div class="sdb-add-row">
-                <input type="text" class="sdb-formula-input" placeholder="${escapeHtml(translate("AddForm.FormulaPlaceholder"))}">
-                <input type="text" class="sdb-label-input" placeholder="${escapeHtml(translate("AddForm.LabelPlaceholder"))}">
-                <button type="button" class="sdb-add-btn">${translate("AddForm.AddButton")}</button>
-            </div>
-        </div>
-        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="layout"></div>
-        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="extra">
-            <div class="sdb-extra-panel">
-                <label class="sdb-extra-item">
-                    <input type="checkbox" class="sdb-hide-bar-checkbox"${barHidden ? " checked" : ""}>
-                    <div>
-                        <strong>${translate("Extra.HideBarTitle")}</strong>
-                        <p>${translate("Extra.HideBarDesc")}</p>
-                        <p>${translate("Extra.HideBarRestore")}</p>
-                    </div>
-                </label>
-            </div>
-        </div>
-        <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="reset">
-            <div class="sdb-reset-panel">
-                <div class="sdb-reset-item">
-                    <div>
-                        <strong>${translate("Reset.PositionTitle")}</strong>
-                        <p>${translate("Reset.PositionDesc")}</p>
-                    </div>
-                    <button type="button" class="sdb-reset-position-btn">${translate("Reset.PositionButton")}</button>
-                </div>
-                <div class="sdb-reset-item">
-                    <div>
-                        <strong>${translate("Reset.ClearTitle")}</strong>
-                        <p>${translate("Reset.ClearDesc")}</p>
-                    </div>
-                    <button type="button" class="sdb-clear-dice-btn">${translate("Reset.ClearButton")}</button>
-                </div>
-            </div>
-        </div>
-    `;
+    const content = buildConfigContent(pendingCustom, pendingGrid, barHidden, savedVisibility);
 
     await foundry.applications.api.DialogV2.wait({
         window:      { title: translate("Dialog.Title", { title: MODULE_TITLE }) },
@@ -467,55 +530,7 @@ async function openConfig(diceBar) {
                 label: translate("Dialog.Save"),
                 callback: async (event, button, dialog) => {
                     const $html = $(dialog.element);
-
-                    // Phase 1: read all rows; warn on invalid formulas per-row but keep going.
-                    const rowData = [];
-                    $html.find("tbody tr").each(function () {
-                        const $row      = $(this);
-                        const oldKey    = $row.data("key");
-                        const newRaw    = $row.find(".sdb-formula-cell-input").val().trim().toLowerCase().replace(/\s+/g, "");
-                        const newLabel  = $row.find(".sdb-label-cell-input").val().trim();
-                        const checked   = $row.find("input[type=checkbox]").prop("checked");
-                        const formulaOk = isValidFormula(newRaw);
-                        const newKey    = dieKey(newRaw, newLabel);
-                        if (!formulaOk) {
-                            notify("Notify.InvalidKeepOriginal", { formula: newRaw });
-                        }
-                        rowData.push({ oldKey, newRaw, newLabel, newKey, checked, formulaOk });
-                    });
-
-                    // Originals that won't vacate: invalid edit, or key not actually changed.
-                    // Any valid edit targeting one of these keys would create a duplicate.
-                    const keepOriginalKeys = new Set(
-                        rowData.filter(r => !r.formulaOk || r.newKey === r.oldKey).map(r => r.oldKey)
-                    );
-
-                    // Phase 2: commit each valid edit that doesn't collide with a kept original
-                    // or an already-committed key from an earlier row.
-                    const committed     = new Set();
-                    const keyMap        = new Map();
-                    const newVisibility = {};
-
-                    for (const row of rowData) {
-                        let resolvedKey = row.oldKey;
-                        if (row.formulaOk) {
-                            if (row.newKey !== row.oldKey && keepOriginalKeys.has(row.newKey)) {
-                                notify("Notify.AlreadyExistsKeepOriginal", { die: dieDisplay(row.newRaw, row.newLabel) });
-                            } else if (committed.has(row.newKey)) {
-                                notify("Notify.AlreadyExistsKeepOriginal", { die: dieDisplay(row.newRaw, row.newLabel) });
-                            } else {
-                                resolvedKey = row.newKey;
-                                const entry = pendingCustom.find(d => dieKey(d.formula, d.label) === row.oldKey);
-                                if (entry) { entry.formula = row.newRaw; entry.label = row.newLabel; }
-                                if (resolvedKey !== row.oldKey) keyMap.set(row.oldKey, resolvedKey);
-                            }
-                        }
-                        committed.add(resolvedKey);
-                        newVisibility[resolvedKey] = row.checked;
-                    }
-                    for (let r = 0; r < pendingGrid.length; r++) {
-                        pendingGrid[r] = pendingGrid[r].map(k => keyMap.get(k) ?? k);
-                    }
+                    const newVisibility = commitDiceEdits($html, pendingCustom, pendingGrid);
 
                     saved = true;
                     await game.user.setFlag(MODULE_ID, "diceVisibility", newVisibility);
@@ -622,5 +637,5 @@ Hooks.once("ready", () => {
     });
 });
 
-if (typeof module !== "undefined") module.exports = {};
+if (typeof module !== "undefined") module.exports = { commitDiceEdits, buildConfigContent, makeRow };
 })();

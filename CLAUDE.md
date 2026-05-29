@@ -51,13 +51,15 @@ There are no built-in dice: the bar starts empty (showing a "Click the gear to a
 - `makeRollClickHandler(diceBar, formula, label)` — returns an async click handler that reads the current roll mode, evaluates a `Roll` (rewritten for advantage/disadvantage), and calls `toMessage()` with `ChatMessage.getSpeaker()`
 - `buildRollFormula(formula, mode)` — rewrites die terms for advantage/disadvantage
 - `isValidFormula(raw)` — validates an entered formula (dice terms and integers joined by `+`/`-`; at least one die; no leading sign)
-- `openConfig()` — opens a `foundry.applications.api.DialogV2` with four tabs: Dice, Layout, Reset, Extra
+- `openConfig()` — opens a `foundry.applications.api.DialogV2` with four tabs: Dice, Layout, Reset, Extra. It owns the pending state and per-tab event wiring, and delegates markup to `buildConfigContent()` and the Save logic to `commitDiceEdits()`.
+- `buildConfigContent(pendingCustom, pendingGrid, barHidden, savedVisibility)` — pure function returning the dialog's inner HTML (the four tabs/panels); calls `makeRow()` for each Dice-tab row
+- `makeRow(formula, label, savedVisibility)` — returns one editable Dice-tab `<tr>` (always with a delete button, since every die is custom); `savedVisibility` seeds the checkbox
 - `renderLayoutEditor()` — renders the drag-and-drop grid in the Layout tab
 - `reshapeGrid(grid, rows)` — redistributes dice slots when row count changes
 - `dieKey(formula, label) / dieKeys(customDice)` — produce the composite persistence keys used in `barGrid` and `diceVisibility`
 - `getCustomDice() / getBarGrid() / getVisibility()` — read saved flags with defaults
 - `escapeHtml(str)` — used wherever user-supplied strings (custom dice formulas and nicknames) are inserted into the DOM; never bypass this
-- `openConfig` save callback runs a **two-phase commit**: phase 1 reads every row, validates formulas, and identifies which originals stay (invalid edit or key unchanged); phase 2 commits valid edits that don't collide with kept originals or already-committed keys, warning on each collision. Modifying the save logic requires understanding both phases.
+- `commitDiceEdits($html, pendingCustom, pendingGrid)` — the **two-phase commit** invoked by the Save button: phase 1 reads every row, validates formulas, and identifies which originals stay (invalid edit or key unchanged); phase 2 commits valid edits that don't collide with kept originals or already-committed keys, warning on each collision. Mutates `pendingCustom`/`pendingGrid` in place and returns the new visibility map. Exported for direct unit testing (see the `commitDiceEdits` describe block in `tests/main.test.js`); modifying it requires understanding both phases.
 - A `configOpen` boolean guard on the gear button prevents opening a second config dialog while one is already open.
 
 **Local dev:**
