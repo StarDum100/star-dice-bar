@@ -4,6 +4,7 @@ const path = require("path");
 const FILES = [
     path.join(__dirname, "../scripts/main.js"),
     path.join(__dirname, "../styles/styles.css"),
+    path.join(__dirname, "../localization/en.json"),
     path.join(__dirname, "main.test.js"),
     path.join(__dirname, "encoding.test.js"),
 ];

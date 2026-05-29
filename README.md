@@ -10,6 +10,7 @@ A FoundryVTT module that adds a draggable quick-access dice bar to the UI. The b
 - Drag-and-drop layout editor with configurable row count
 - Per-die visibility toggle so you can hide dice without deleting them
 - Draggable bar that remembers its position per user
+- Fully localizable — all UI text is loaded from language files (English included; more can be added)
 
 ## Compatibility
 
@@ -66,7 +67,21 @@ The suite uses [Jest](https://jestjs.io/) with a jsdom environment to test the m
 - **Config dialog** — tab switching, adding/deleting dice, inline formula editing, duplicate detection, drag-and-drop reordering, row count changes
 - **XSS resilience** — script injection, attribute injection, and `img onerror` payloads in formulas and labels do not execute
 - **Resilience** — graceful handling of missing DOM nodes, invalid saved data, and NaN values
-- **Manifest validation** — `module.json` is well-formed, version strings are valid, and all referenced files exist on disk
+- **Localization** — every UI string resolves through `game.i18n`, the English file is complete, and additional languages keep full key/placeholder parity with English
+- **Manifest validation** — `module.json` is well-formed, version strings are valid, and all referenced files (scripts, styles, and language files) exist on disk
+
+## Localization
+
+All user-facing text is loaded from JSON language files in [`localization/`](localization/) under the `STARDICEBAR` namespace and registered through the `languages` array in `module.json`. English (`localization/en.json`) is the source of truth.
+
+To add a translation:
+
+1. Copy `localization/en.json` to `localization/<lang>.json` (e.g. `de.json`, `fr.json`) and translate the values, leaving the keys and any `{placeholders}` unchanged.
+2. Add an entry to the `languages` array in `module.json`:
+   ```json
+   { "lang": "de", "name": "Deutsch", "path": "localization/de.json" }
+   ```
+3. Run `npm test` — the localization tests verify the new file has full key and placeholder parity with English.
 
 ### Verifying compatibility with a new Foundry version
 

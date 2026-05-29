@@ -1,5 +1,12 @@
 const $ = require("jquery");
 
+// Load the real English localization so the i18n mock resolves the same strings the
+// module ships with — assertions below check the actual English text, not raw keys.
+const EN = require("../localization/en.json");
+function lookupTranslation(stringId) {
+  return stringId.split(".").reduce((node, key) => (node == null ? undefined : node[key]), EN);
+}
+
 const hookCallbacks = {};
 
 global.$ = $;
@@ -20,6 +27,17 @@ global.game = {
     register: jest.fn(),
     get:      jest.fn().mockReturnValue(false),
     set:      jest.fn().mockResolvedValue(undefined),
+  },
+  i18n: {
+    localize: (stringId) => {
+      const value = lookupTranslation(stringId);
+      return typeof value === "string" ? value : stringId;
+    },
+    format: (stringId, data = {}) => {
+      const value = lookupTranslation(stringId);
+      if (typeof value !== "string") return stringId;
+      return value.replace(/\{(\w+)\}/g, (match, key) => (key in data ? data[key] : match));
+    },
   },
 };
 global.ui = {

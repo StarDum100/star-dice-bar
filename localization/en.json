@@ -1,0 +1,71 @@
+{
+  "STARDICEBAR": {
+    "Mode": {
+      "Normal": "Normal",
+      "Advantage": "Adv",
+      "Disadvantage": "Dis"
+    },
+    "Bar": {
+      "EmptyHint": "Click the gear to add dice",
+      "DragHandleTitle": "Drag to move bar",
+      "ModeButtonTitle": "Roll mode: click to cycle Normal / Advantage / Disadvantage",
+      "ConfigButtonTitle": "Configure Dice"
+    },
+    "Flavor": {
+      "QuickRoll": "Quick Roll: {dice}",
+      "AdvantageSuffix": " -- Advantage",
+      "DisadvantageSuffix": " -- Disadvantage"
+    },
+    "Tab": {
+      "Dice": "Dice",
+      "Layout": "Layout",
+      "Reset": "Reset",
+      "Extra": "Extra"
+    },
+    "Table": {
+      "Formula": "Formula",
+      "Label": "Label",
+      "Visible": "Visible"
+    },
+    "AddForm": {
+      "FormulaPlaceholder": "Formula e.g. 1d20, 2d6+3",
+      "LabelPlaceholder": "Label (optional)",
+      "AddButton": "Add"
+    },
+    "Layout": {
+      "Empty": "No dice configured. Add dice on the Dice tab.",
+      "Hint": "Drag any die to a slot to reorder &middot; Change the row count to reorganize the grid",
+      "NumberOfRows": "Number of Rows: "
+    },
+    "Extra": {
+      "HideBarTitle": "Hide Button Bar",
+      "HideBarDesc": "Hide the button bar from the screen.",
+      "HideBarRestore": "To restore it, uncheck this option in Configure Game Settings."
+    },
+    "Reset": {
+      "PositionTitle": "Reset Bar Position",
+      "PositionDesc": "Move the button bar to the default position at the top center of the screen.",
+      "PositionButton": "Reset Position",
+      "ClearTitle": "Clear All Dice",
+      "ClearDesc": "Remove every die from the bar.",
+      "ClearButton": "Clear Dice"
+    },
+    "Dialog": {
+      "Title": "{title} -- Configure (save to persist changes)",
+      "Save": "Save",
+      "Cancel": "Cancel"
+    },
+    "Notify": {
+      "InvalidFormula": "Invalid dice formula. Use dice with +/- numbers, e.g. 1d20, 2d6+3, 1d8+1d6.",
+      "AlreadyExists": "{die} already exists.",
+      "InvalidKeepOriginal": "\"{formula}\" is not a valid formula -- keeping original.",
+      "AlreadyExistsKeepOriginal": "\"{die}\" already exists -- keeping original."
+    },
+    "Settings": {
+      "HideBar": {
+        "Name": "Hide Button Bar",
+        "Hint": "Remove the button bar from the screen. Toggle this setting to bring it back."
+      }
+    }
+  }
+}
