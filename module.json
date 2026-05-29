@@ -3,6 +3,7 @@
   "title": "Star Dice Bar",
   "description": "Adds a customizable quick-access bar for rolling dice and formulas.",
   "version": "1.0.0",
+  "license": "MIT",
   "authors": [
     {
       "name": "StarDragon"
