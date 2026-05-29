@@ -14,9 +14,9 @@ A FoundryVTT module that adds a draggable quick-access dice bar to the UI. The b
 
 ## Compatibility
 
-| Foundry Version | Status |
+| Module Version | Foundry Version |
 |---|---|
-| v14 | Verified |
+| 1.0.0 | v14 |
 
 ## Installation
 
