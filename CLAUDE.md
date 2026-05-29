@@ -38,7 +38,7 @@ There are no built-in dice: the bar starts empty (showing a "Click the gear to a
 
 **Localization:**
 - Every visible UI string is stored under the `STARDICEBAR` namespace in `localization/<lang>.json`, registered via the `languages` array in `module.json`. English (`localization/en.json`) is the source of truth.
-- `t(key, data)` is the in-module helper: it prefixes the key with `STARDICEBAR.` and calls `game.i18n.localize(key)` (no `data`) or `game.i18n.format(key, data)` (with `{placeholder}` interpolation). All UI text must go through `t()` — do not hardcode user-facing strings.
+- `translate(key, data)` is the in-module helper: it prefixes the key with `STARDICEBAR.` and calls `game.i18n.localize(key)` (no `data`) or `game.i18n.format(key, data)` (with `{placeholder}` interpolation). All UI text must go through `translate()` — do not hardcode user-facing strings.
 - `notify(key, data)` wraps `ui.notifications.warn` and prefixes the localized message with `MODULE_TITLE`, producing e.g. `"Star Dice Bar: <message>"`.
 - The `barHidden` setting registers its `name`/`hint` as raw i18n keys (`STARDICEBAR.Settings.HideBar.*`); Foundry localizes those automatically when the settings menu renders.
 - `MODULE_TITLE` (`"Star Dice Bar"`) is the brand name and is intentionally **not** localized; it is interpolated into the dialog title and notification prefixes.
@@ -46,7 +46,7 @@ There are no built-in dice: the bar starts empty (showing a "Click the gear to a
 - Adding a language: drop a `localization/<lang>.json` with the same nested keys, add an entry to `module.json` `languages`. `tests/localization.test.js` then enforces key/placeholder parity with English automatically.
 
 **Key functions in `main.js`:**
-- `t(key, data) / notify(key, data)` — localization helpers (see Localization above)
+- `translate(key, data) / notify(key, data)` — localization helpers (see Localization above)
 - `renderBar()` — rebuilds dice buttons from the saved grid; button text is `label || formula`, tooltip is the formula; called on init and after config saves
 - `makeRollClickHandler(diceBar, formula, label)` — returns an async click handler that reads the current roll mode, evaluates a `Roll` (rewritten for advantage/disadvantage), and calls `toMessage()` with `ChatMessage.getSpeaker()`
 - `buildRollFormula(formula, mode)` — rewrites die terms for advantage/disadvantage

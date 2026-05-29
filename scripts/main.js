@@ -12,7 +12,7 @@ const MODE_LABEL_KEYS = { normal: "Mode.Normal", advantage: "Mode.Advantage", di
 // Localization helper. Every visible string is stored under the STARDICEBAR namespace
 // in localization/<lang>.json (registered via module.json "languages"). Pass `data` to
 // interpolate {placeholders} via game.i18n.format; omit it for a plain lookup.
-function t(key, data) {
+function translate(key, data) {
     const id = `STARDICEBAR.${key}`;
     return data ? game.i18n.format(id, data) : game.i18n.localize(id);
 }
@@ -20,7 +20,7 @@ function t(key, data) {
 // All user-facing notifications are prefixed with the module title for clarity in Foundry's
 // notification stream, e.g. "Star Dice Bar: <message>".
 function notify(key, data) {
-    ui.notifications.warn(`${MODULE_TITLE}: ${t(key, data)}`);
+    ui.notifications.warn(`${MODULE_TITLE}: ${translate(key, data)}`);
 }
 
 // A custom die formula: one or more `NdX` dice terms and/or integers joined by + / -,
@@ -125,9 +125,9 @@ function makeRollClickHandler(diceBar, formula, label = "") {
         const mode = diceBar.data("rollMode") || "normal";
         const roll = new Roll(buildRollFormula(formula, mode));
         await roll.evaluate();
-        let flavor = t("Flavor.QuickRoll", { dice: label ? `${label} (${formula})` : formula });
-        if (mode === "advantage")         flavor += t("Flavor.AdvantageSuffix");
-        else if (mode === "disadvantage") flavor += t("Flavor.DisadvantageSuffix");
+        let flavor = translate("Flavor.QuickRoll", { dice: label ? `${label} (${formula})` : formula });
+        if (mode === "advantage")         flavor += translate("Flavor.AdvantageSuffix");
+        else if (mode === "disadvantage") flavor += translate("Flavor.DisadvantageSuffix");
         roll.toMessage({
             speaker: ChatMessage.getSpeaker(),
             flavor,
@@ -171,7 +171,7 @@ function renderBar(diceBar, overrides = {}) {
     });
 
     if (gridEl.find("button[data-roll]").length === 0) {
-        gridEl.append(`<span class="sdb-empty-hint">${t("Bar.EmptyHint")}</span>`);
+        gridEl.append(`<span class="sdb-empty-hint">${translate("Bar.EmptyHint")}</span>`);
     }
 }
 
@@ -180,7 +180,7 @@ function renderLayoutEditor(html, pendingGrid, pendingCustom = []) {
     panel.empty();
 
     if (pendingGrid.length === 0 || pendingGrid.every(r => r.length === 0)) {
-        panel.append(`<p class="sdb-layout-empty">${t("Layout.Empty")}</p>`);
+        panel.append(`<p class="sdb-layout-empty">${translate("Layout.Empty")}</p>`);
         return;
     }
 
@@ -189,12 +189,12 @@ function renderLayoutEditor(html, pendingGrid, pendingCustom = []) {
     const numRows = pendingGrid.length;
     const numCols = Math.ceil(flat.length / numRows);
 
-    panel.append(`<p class="sdb-layout-hint">${t("Layout.Hint")}</p>`);
+    panel.append(`<p class="sdb-layout-hint">${translate("Layout.Hint")}</p>`);
 
     const controls = $('<div class="sdb-layout-controls">');
     const rowInput = $('<input type="number" class="sdb-rows-input">')
         .attr("min", 1).attr("max", flat.length).val(numRows);
-    controls.append($('<label class="sdb-rows-label">').text(t("Layout.NumberOfRows")).append(rowInput));
+    controls.append($('<label class="sdb-rows-label">').text(translate("Layout.NumberOfRows")).append(rowInput));
     panel.append(controls);
 
     const editor = $('<div class="sdb-layout-editor">');
@@ -401,15 +401,15 @@ async function openConfig(diceBar) {
 
     const content = `
         <div class="sdb-tabs">
-            <button type="button" class="sdb-tab sdb-tab-active" data-tab="dice">${t("Tab.Dice")}</button>
-            <button type="button" class="sdb-tab" data-tab="layout">${t("Tab.Layout")}</button>
-            <button type="button" class="sdb-tab" data-tab="reset">${t("Tab.Reset")}</button>
-            <button type="button" class="sdb-tab" data-tab="extra">${t("Tab.Extra")}</button>
+            <button type="button" class="sdb-tab sdb-tab-active" data-tab="dice">${translate("Tab.Dice")}</button>
+            <button type="button" class="sdb-tab" data-tab="layout">${translate("Tab.Layout")}</button>
+            <button type="button" class="sdb-tab" data-tab="reset">${translate("Tab.Reset")}</button>
+            <button type="button" class="sdb-tab" data-tab="extra">${translate("Tab.Extra")}</button>
         </div>
         <div class="sdb-tab-panel" data-panel="dice">
             <table class="sdb-config-table">
                 <thead>
-                    <tr><th>${t("Table.Formula")}</th><th>${t("Table.Label")}</th><th>${t("Table.Visible")}</th><th></th></tr>
+                    <tr><th>${translate("Table.Formula")}</th><th>${translate("Table.Label")}</th><th>${translate("Table.Visible")}</th><th></th></tr>
                 </thead>
                 <tbody>
                     ${flatKeys.map(key => {
@@ -419,9 +419,9 @@ async function openConfig(diceBar) {
                 </tbody>
             </table>
             <div class="sdb-add-row">
-                <input type="text" class="sdb-formula-input" placeholder="${escapeHtml(t("AddForm.FormulaPlaceholder"))}">
-                <input type="text" class="sdb-label-input" placeholder="${escapeHtml(t("AddForm.LabelPlaceholder"))}">
-                <button type="button" class="sdb-add-btn">${t("AddForm.AddButton")}</button>
+                <input type="text" class="sdb-formula-input" placeholder="${escapeHtml(translate("AddForm.FormulaPlaceholder"))}">
+                <input type="text" class="sdb-label-input" placeholder="${escapeHtml(translate("AddForm.LabelPlaceholder"))}">
+                <button type="button" class="sdb-add-btn">${translate("AddForm.AddButton")}</button>
             </div>
         </div>
         <div class="sdb-tab-panel sdb-tab-panel-hidden" data-panel="layout"></div>
@@ -430,9 +430,9 @@ async function openConfig(diceBar) {
                 <label class="sdb-extra-item">
                     <input type="checkbox" class="sdb-hide-bar-checkbox"${barHidden ? " checked" : ""}>
                     <div>
-                        <strong>${t("Extra.HideBarTitle")}</strong>
-                        <p>${t("Extra.HideBarDesc")}</p>
-                        <p>${t("Extra.HideBarRestore")}</p>
+                        <strong>${translate("Extra.HideBarTitle")}</strong>
+                        <p>${translate("Extra.HideBarDesc")}</p>
+                        <p>${translate("Extra.HideBarRestore")}</p>
                     </div>
                 </label>
             </div>
@@ -441,30 +441,30 @@ async function openConfig(diceBar) {
             <div class="sdb-reset-panel">
                 <div class="sdb-reset-item">
                     <div>
-                        <strong>${t("Reset.PositionTitle")}</strong>
-                        <p>${t("Reset.PositionDesc")}</p>
+                        <strong>${translate("Reset.PositionTitle")}</strong>
+                        <p>${translate("Reset.PositionDesc")}</p>
                     </div>
-                    <button type="button" class="sdb-reset-position-btn">${t("Reset.PositionButton")}</button>
+                    <button type="button" class="sdb-reset-position-btn">${translate("Reset.PositionButton")}</button>
                 </div>
                 <div class="sdb-reset-item">
                     <div>
-                        <strong>${t("Reset.ClearTitle")}</strong>
-                        <p>${t("Reset.ClearDesc")}</p>
+                        <strong>${translate("Reset.ClearTitle")}</strong>
+                        <p>${translate("Reset.ClearDesc")}</p>
                     </div>
-                    <button type="button" class="sdb-clear-dice-btn">${t("Reset.ClearButton")}</button>
+                    <button type="button" class="sdb-clear-dice-btn">${translate("Reset.ClearButton")}</button>
                 </div>
             </div>
         </div>
     `;
 
     await foundry.applications.api.DialogV2.wait({
-        window:      { title: t("Dialog.Title", { title: MODULE_TITLE }) },
+        window:      { title: translate("Dialog.Title", { title: MODULE_TITLE }) },
         content,
         rejectClose: false,
         buttons: [
             {
                 action: "save",
-                label: t("Dialog.Save"),
+                label: translate("Dialog.Save"),
                 callback: async (event, button, dialog) => {
                     const $html = $(dialog.element);
 
@@ -531,7 +531,7 @@ async function openConfig(diceBar) {
                     renderBar(diceBar);
                 }
             },
-            { action: "cancel", label: t("Dialog.Cancel"), default: true }
+            { action: "cancel", label: translate("Dialog.Cancel"), default: true }
         ],
         render: (event, dialog) => {
             const $html = $(dialog.element);
@@ -579,9 +579,9 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
     const diceBar = $(`<div class="sdb-dice-bar">
         <div class="sdb-bar-controls">
-            <span class="sdb-bar-handle" title="${escapeHtml(t("Bar.DragHandleTitle"))}">&#8801;</span>
-            <button class="sdb-mode-btn sdb-mode-normal" data-mode="normal" title="${escapeHtml(t("Bar.ModeButtonTitle"))}">${t("Mode.Normal")}</button>
-            <button class="sdb-config-btn" title="${escapeHtml(t("Bar.ConfigButtonTitle"))}">&#9881;</button>
+            <span class="sdb-bar-handle" title="${escapeHtml(translate("Bar.DragHandleTitle"))}">&#8801;</span>
+            <button class="sdb-mode-btn sdb-mode-normal" data-mode="normal" title="${escapeHtml(translate("Bar.ModeButtonTitle"))}">${translate("Mode.Normal")}</button>
+            <button class="sdb-config-btn" title="${escapeHtml(translate("Bar.ConfigButtonTitle"))}">&#9881;</button>
         </div>
         <div class="sdb-dice-grid"></div>
     </div>`);
@@ -594,7 +594,7 @@ Hooks.once("ready", () => {
         const next = ROLL_MODES[(ROLL_MODES.indexOf(current) + 1) % ROLL_MODES.length];
         diceBar.data("rollMode", next);
         modeBtn
-            .text(t(MODE_LABEL_KEYS[next]))
+            .text(translate(MODE_LABEL_KEYS[next]))
             .attr("data-mode", next)
             .removeClass("sdb-mode-normal sdb-mode-advantage sdb-mode-disadvantage")
             .addClass(`sdb-mode-${next}`);
