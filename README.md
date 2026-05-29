@@ -10,7 +10,7 @@ A FoundryVTT module that adds a draggable quick-access dice bar to the UI. The b
 - Drag-and-drop layout editor with configurable row count
 - Per-die visibility toggle so you can hide dice without deleting them
 - Draggable bar that remembers its position per user
-- Fully localizable — all UI text is loaded from language files (English included; more can be added)
+- Fully localizable — ships with English, French, German, Spanish, and Brazilian Portuguese; more can be added
 
 ## Compatibility
 
@@ -72,7 +72,7 @@ The suite uses [Jest](https://jestjs.io/) with a jsdom environment to test the m
 
 ## Localization
 
-All user-facing text is loaded from JSON language files in [`localization/`](localization/) under the `STARDICEBAR` namespace and registered through the `languages` array in `module.json`. English (`localization/en.json`) is the source of truth.
+All user-facing text is loaded from JSON language files in [`localization/`](localization/) under the `STARDICEBAR` namespace and registered through the `languages` array in `module.json`. English (`localization/en.json`) is the source of truth. The module ships with English (`en`), French (`fr`), German (`de`), Spanish (`es`), and Brazilian Portuguese (`pt-BR`); Foundry serves each user the file matching their client language and falls back to English for any missing key.
 
 To add a translation:
 

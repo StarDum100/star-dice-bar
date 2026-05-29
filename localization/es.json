@@ -1,0 +1,71 @@
+{
+  "STARDICEBAR": {
+    "Mode": {
+      "Normal": "Normal",
+      "Advantage": "Ventaja",
+      "Disadvantage": "Desventaja"
+    },
+    "Bar": {
+      "EmptyHint": "Haz clic en el engranaje para añadir dados",
+      "DragHandleTitle": "Arrastra para mover la barra",
+      "ModeButtonTitle": "Modo de tirada: haz clic para alternar Normal / Ventaja / Desventaja",
+      "ConfigButtonTitle": "Configurar dados"
+    },
+    "Flavor": {
+      "QuickRoll": "Tirada rápida: {dice}",
+      "AdvantageSuffix": " -- Ventaja",
+      "DisadvantageSuffix": " -- Desventaja"
+    },
+    "Tab": {
+      "Dice": "Dados",
+      "Layout": "Disposición",
+      "Reset": "Restablecer",
+      "Extra": "Extra"
+    },
+    "Table": {
+      "Formula": "Fórmula",
+      "Label": "Etiqueta",
+      "Visible": "Visible"
+    },
+    "AddForm": {
+      "FormulaPlaceholder": "Fórmula p. ej. 1d20, 2d6+3",
+      "LabelPlaceholder": "Etiqueta (opcional)",
+      "AddButton": "Añadir"
+    },
+    "Layout": {
+      "Empty": "No hay dados configurados. Añade dados en la pestaña Dados.",
+      "Hint": "Arrastra un dado a una casilla para reordenar &middot; Cambia el número de filas para reorganizar la cuadrícula",
+      "NumberOfRows": "Número de filas: "
+    },
+    "Extra": {
+      "HideBarTitle": "Ocultar la barra de botones",
+      "HideBarDesc": "Ocultar la barra de botones de la pantalla.",
+      "HideBarRestore": "Para restaurarla, desmarca esta opción en Configurar ajustes del juego."
+    },
+    "Reset": {
+      "PositionTitle": "Restablecer la posición de la barra",
+      "PositionDesc": "Mover la barra de botones a la posición predeterminada en la parte superior central de la pantalla.",
+      "PositionButton": "Restablecer posición",
+      "ClearTitle": "Eliminar todos los dados",
+      "ClearDesc": "Eliminar todos los dados de la barra.",
+      "ClearButton": "Eliminar dados"
+    },
+    "Dialog": {
+      "Title": "{title} -- Configurar (guarda para conservar los cambios)",
+      "Save": "Guardar",
+      "Cancel": "Cancelar"
+    },
+    "Notify": {
+      "InvalidFormula": "Fórmula de dados no válida. Usa dados con números +/-, p. ej. 1d20, 2d6+3, 1d8+1d6.",
+      "AlreadyExists": "{die} ya existe.",
+      "InvalidKeepOriginal": "«{formula}» no es una fórmula válida -- se conserva el original.",
+      "AlreadyExistsKeepOriginal": "«{die}» ya existe -- se conserva el original."
+    },
+    "Settings": {
+      "HideBar": {
+        "Name": "Ocultar la barra de botones",
+        "Hint": "Eliminar la barra de botones de la pantalla. Activa o desactiva este ajuste para recuperarla."
+      }
+    }
+  }
+}

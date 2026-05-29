@@ -1262,13 +1262,13 @@ describe("Star Dice Bar", () => {
       expect(document.querySelector(".sdb-mode-btn").textContent.trim()).toBe("Normal");
     });
 
-    it("cycles Normal -> Adv -> Dis -> Normal on click", () => {
+    it("cycles Normal -> Advantage -> Disadvantage -> Normal on click", () => {
       const btn = document.querySelector(".sdb-mode-btn");
       btn.click();
-      expect(btn.textContent.trim()).toBe("Adv");
+      expect(btn.textContent.trim()).toBe("Advantage");
       expect(btn.classList.contains("sdb-mode-advantage")).toBe(true);
       btn.click();
-      expect(btn.textContent.trim()).toBe("Dis");
+      expect(btn.textContent.trim()).toBe("Disadvantage");
       expect(btn.classList.contains("sdb-mode-disadvantage")).toBe(true);
       btn.click();
       expect(btn.textContent.trim()).toBe("Normal");

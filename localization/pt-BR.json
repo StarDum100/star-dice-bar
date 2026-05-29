@@ -1,0 +1,71 @@
+{
+  "STARDICEBAR": {
+    "Mode": {
+      "Normal": "Normal",
+      "Advantage": "Vantagem",
+      "Disadvantage": "Desvantagem"
+    },
+    "Bar": {
+      "EmptyHint": "Clique na engrenagem para adicionar dados",
+      "DragHandleTitle": "Arraste para mover a barra",
+      "ModeButtonTitle": "Modo de rolagem: clique para alternar entre Normal / Vantagem / Desvantagem",
+      "ConfigButtonTitle": "Configurar dados"
+    },
+    "Flavor": {
+      "QuickRoll": "Rolagem rápida: {dice}",
+      "AdvantageSuffix": " -- Vantagem",
+      "DisadvantageSuffix": " -- Desvantagem"
+    },
+    "Tab": {
+      "Dice": "Dados",
+      "Layout": "Layout",
+      "Reset": "Redefinir",
+      "Extra": "Extra"
+    },
+    "Table": {
+      "Formula": "Fórmula",
+      "Label": "Rótulo",
+      "Visible": "Visível"
+    },
+    "AddForm": {
+      "FormulaPlaceholder": "Fórmula ex. 1d20, 2d6+3",
+      "LabelPlaceholder": "Rótulo (opcional)",
+      "AddButton": "Adicionar"
+    },
+    "Layout": {
+      "Empty": "Nenhum dado configurado. Adicione dados na aba Dados.",
+      "Hint": "Arraste um dado para um espaço para reordenar &middot; Altere o número de linhas para reorganizar a grade",
+      "NumberOfRows": "Número de linhas: "
+    },
+    "Extra": {
+      "HideBarTitle": "Ocultar a barra de botões",
+      "HideBarDesc": "Ocultar a barra de botões da tela.",
+      "HideBarRestore": "Para restaurá-la, desmarque esta opção em Configurar Ajustes do Jogo."
+    },
+    "Reset": {
+      "PositionTitle": "Redefinir a posição da barra",
+      "PositionDesc": "Mover a barra de botões para a posição padrão, no topo central da tela.",
+      "PositionButton": "Redefinir posição",
+      "ClearTitle": "Limpar todos os dados",
+      "ClearDesc": "Remover todos os dados da barra.",
+      "ClearButton": "Limpar dados"
+    },
+    "Dialog": {
+      "Title": "{title} -- Configurar (salve para manter as alterações)",
+      "Save": "Salvar",
+      "Cancel": "Cancelar"
+    },
+    "Notify": {
+      "InvalidFormula": "Fórmula de dado inválida. Use dados com números +/-, ex. 1d20, 2d6+3, 1d8+1d6.",
+      "AlreadyExists": "{die} já existe.",
+      "InvalidKeepOriginal": "\"{formula}\" não é uma fórmula válida -- mantendo o original.",
+      "AlreadyExistsKeepOriginal": "\"{die}\" já existe -- mantendo o original."
+    },
+    "Settings": {
+      "HideBar": {
+        "Name": "Ocultar a barra de botões",
+        "Hint": "Remover a barra de botões da tela. Alterne esta configuração para trazê-la de volta."
+      }
+    }
+  }
+}

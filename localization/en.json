@@ -2,8 +2,8 @@
   "STARDICEBAR": {
     "Mode": {
       "Normal": "Normal",
-      "Advantage": "Adv",
-      "Disadvantage": "Dis"
+      "Advantage": "Advantage",
+      "Disadvantage": "Disadvantage"
     },
     "Bar": {
       "EmptyHint": "Click the gear to add dice",

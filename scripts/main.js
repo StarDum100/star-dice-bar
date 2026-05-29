@@ -588,6 +588,7 @@ Hooks.once("ready", () => {
 
     diceBar.data("rollMode", "normal");
     const modeBtn = diceBar.find(".sdb-mode-btn");
+
     modeBtn.on("click", () => {
         const current = diceBar.data("rollMode") || "normal";
         const next = ROLL_MODES[(ROLL_MODES.indexOf(current) + 1) % ROLL_MODES.length];

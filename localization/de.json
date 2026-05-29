@@ -1,0 +1,71 @@
+{
+  "STARDICEBAR": {
+    "Mode": {
+      "Normal": "Normal",
+      "Advantage": "Vorteil",
+      "Disadvantage": "Nachteil"
+    },
+    "Bar": {
+      "EmptyHint": "Klicke auf das Zahnrad, um Würfel hinzuzufügen",
+      "DragHandleTitle": "Ziehen, um die Leiste zu verschieben",
+      "ModeButtonTitle": "Wurfmodus: klicken, um zwischen Normal / Vorteil / Nachteil zu wechseln",
+      "ConfigButtonTitle": "Würfel konfigurieren"
+    },
+    "Flavor": {
+      "QuickRoll": "Schnellwurf: {dice}",
+      "AdvantageSuffix": " -- Vorteil",
+      "DisadvantageSuffix": " -- Nachteil"
+    },
+    "Tab": {
+      "Dice": "Würfel",
+      "Layout": "Layout",
+      "Reset": "Zurücksetzen",
+      "Extra": "Extra"
+    },
+    "Table": {
+      "Formula": "Formel",
+      "Label": "Bezeichnung",
+      "Visible": "Sichtbar"
+    },
+    "AddForm": {
+      "FormulaPlaceholder": "Formel z. B. 1d20, 2d6+3",
+      "LabelPlaceholder": "Bezeichnung (optional)",
+      "AddButton": "Hinzufügen"
+    },
+    "Layout": {
+      "Empty": "Keine Würfel konfiguriert. Füge im Würfel-Tab welche hinzu.",
+      "Hint": "Ziehe einen Würfel auf einen Platz, um ihn neu anzuordnen &middot; Ändere die Zeilenanzahl, um das Raster neu zu organisieren",
+      "NumberOfRows": "Anzahl der Zeilen: "
+    },
+    "Extra": {
+      "HideBarTitle": "Schaltflächenleiste ausblenden",
+      "HideBarDesc": "Die Schaltflächenleiste vom Bildschirm ausblenden.",
+      "HideBarRestore": "Um sie wiederherzustellen, deaktiviere diese Option in den Spieleinstellungen."
+    },
+    "Reset": {
+      "PositionTitle": "Leistenposition zurücksetzen",
+      "PositionDesc": "Die Schaltflächenleiste an die Standardposition oben in der Bildschirmmitte verschieben.",
+      "PositionButton": "Position zurücksetzen",
+      "ClearTitle": "Alle Würfel entfernen",
+      "ClearDesc": "Alle Würfel aus der Leiste entfernen.",
+      "ClearButton": "Würfel entfernen"
+    },
+    "Dialog": {
+      "Title": "{title} -- Konfigurieren (zum Übernehmen der Änderungen speichern)",
+      "Save": "Speichern",
+      "Cancel": "Abbrechen"
+    },
+    "Notify": {
+      "InvalidFormula": "Ungültige Würfelformel. Verwende Würfel mit +/- Zahlen, z. B. 1d20, 2d6+3, 1d8+1d6.",
+      "AlreadyExists": "{die} existiert bereits.",
+      "InvalidKeepOriginal": "„{formula}“ ist keine gültige Formel -- Original wird beibehalten.",
+      "AlreadyExistsKeepOriginal": "„{die}“ existiert bereits -- Original wird beibehalten."
+    },
+    "Settings": {
+      "HideBar": {
+        "Name": "Schaltflächenleiste ausblenden",
+        "Hint": "Die Schaltflächenleiste vom Bildschirm entfernen. Schalte diese Einstellung um, um sie zurückzuholen."
+      }
+    }
+  }
+}

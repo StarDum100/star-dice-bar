@@ -1,0 +1,71 @@
+{
+  "STARDICEBAR": {
+    "Mode": {
+      "Normal": "Normal",
+      "Advantage": "Avantage",
+      "Disadvantage": "Désavantage"
+    },
+    "Bar": {
+      "EmptyHint": "Cliquez sur l'engrenage pour ajouter des dés",
+      "DragHandleTitle": "Glissez pour déplacer la barre",
+      "ModeButtonTitle": "Mode de lancer : cliquez pour alterner Normal / Avantage / Désavantage",
+      "ConfigButtonTitle": "Configurer les dés"
+    },
+    "Flavor": {
+      "QuickRoll": "Lancer rapide : {dice}",
+      "AdvantageSuffix": " -- Avantage",
+      "DisadvantageSuffix": " -- Désavantage"
+    },
+    "Tab": {
+      "Dice": "Dés",
+      "Layout": "Disposition",
+      "Reset": "Réinitialiser",
+      "Extra": "Extra"
+    },
+    "Table": {
+      "Formula": "Formule",
+      "Label": "Étiquette",
+      "Visible": "Visible"
+    },
+    "AddForm": {
+      "FormulaPlaceholder": "Formule p. ex. 1d20, 2d6+3",
+      "LabelPlaceholder": "Étiquette (facultatif)",
+      "AddButton": "Ajouter"
+    },
+    "Layout": {
+      "Empty": "Aucun dé configuré. Ajoutez des dés dans l'onglet Dés.",
+      "Hint": "Glissez un dé sur un emplacement pour le réorganiser &middot; Modifiez le nombre de lignes pour réorganiser la grille",
+      "NumberOfRows": "Nombre de lignes : "
+    },
+    "Extra": {
+      "HideBarTitle": "Masquer la barre de boutons",
+      "HideBarDesc": "Masquer la barre de boutons de l'écran.",
+      "HideBarRestore": "Pour la rétablir, décochez cette option dans Configurer les paramètres du jeu."
+    },
+    "Reset": {
+      "PositionTitle": "Réinitialiser la position de la barre",
+      "PositionDesc": "Déplacer la barre de boutons à sa position par défaut, en haut au centre de l'écran.",
+      "PositionButton": "Réinitialiser la position",
+      "ClearTitle": "Effacer tous les dés",
+      "ClearDesc": "Retirer tous les dés de la barre.",
+      "ClearButton": "Effacer les dés"
+    },
+    "Dialog": {
+      "Title": "{title} -- Configuration (enregistrez pour conserver les modifications)",
+      "Save": "Enregistrer",
+      "Cancel": "Annuler"
+    },
+    "Notify": {
+      "InvalidFormula": "Formule de dé invalide. Utilisez des dés avec des nombres +/-, p. ex. 1d20, 2d6+3, 1d8+1d6.",
+      "AlreadyExists": "{die} existe déjà.",
+      "InvalidKeepOriginal": "« {formula} » n'est pas une formule valide -- conservation de l'original.",
+      "AlreadyExistsKeepOriginal": "« {die} » existe déjà -- conservation de l'original."
+    },
+    "Settings": {
+      "HideBar": {
+        "Name": "Masquer la barre de boutons",
+        "Hint": "Retirer la barre de boutons de l'écran. Activez ce paramètre pour la faire réapparaître."
+      }
+    }
+  }
+}
