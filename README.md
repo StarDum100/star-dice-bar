@@ -24,6 +24,42 @@ A FoundryVTT module that adds a draggable quick-access dice bar to the UI. The b
 2. Paste the manifest URL into the field at the bottom and click **Install**.
 3. Enable the module in your world under **Manage Modules**.
 
+## Examples
+
+The bar starts empty — click the gear (⚙) to add your first die:
+
+![Empty dice bar showing the "Click the gear to add dice" hint](images/examples/default_bar.png)
+
+Dice you add become one-click buttons in the grid layout you choose. The button on the left cycles the roll mode — **Normal → Advantage → Disadvantage** — and advantage/disadvantage automatically doubles each die term and keeps the highest/lowest half (e.g. `1d20` → `2d20kh1`):
+
+| Normal | Advantage | Disadvantage |
+| :---: | :---: | :---: |
+| ![Dice bar in Normal mode](images/examples/normal_dice_bar.png) | ![Dice bar in Advantage mode](images/examples/advantage_dice_bar.png) | ![Dice bar in Disadvantage mode](images/examples/disadvantage_dice_bar.png) |
+
+Clicking a die posts the roll to chat with flavor text showing the die and the mode used:
+
+![Chat log of quick rolls, including Advantage and Disadvantage results](images/examples/dice_rolls.png)
+
+### Configuration
+
+Clicking the gear opens a dialog with four tabs.
+
+**Dice** — add, edit, delete, and show/hide each die:
+
+![Dice configuration tab listing formulas, labels, and visibility checkboxes](images/examples/config_dice.png)
+
+**Layout** — drag dice to reorder them and choose how many rows the bar uses:
+
+![Layout tab with draggable dice tiles and a row-count input](images/examples/config_layout.png)
+
+**Reset** — move the bar back to its default position or clear every die:
+
+![Reset tab with Reset Position and Clear Dice buttons](images/examples/config_reset.png)
+
+**Extra** — hide the bar entirely; re-enable it later from Foundry's game settings:
+
+![Extra tab with the Hide Button Bar option](images/examples/config_extra.png)
+
 ## Development
 
 ### Prerequisites
