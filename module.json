@@ -2,7 +2,7 @@
   "id": "star-dice-bar",
   "title": "Star Dice Bar",
   "description": "Adds a customizable quick-access bar for rolling dice and formulas.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "url": "https://github.com/StarDum100/star-dice-bar",
   "manifest": "https://github.com/StarDum100/star-dice-bar/releases/latest/download/module.json",
@@ -13,7 +13,7 @@
     }
   ],
   "compatibility": {
-    "minimum": "14",
+    "minimum": "13",
     "verified": "14.362"
   },
   "esmodules": [
